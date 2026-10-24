@@ -18,16 +18,15 @@
   function dateOffset(days) { const date = new Date(); date.setDate(date.getDate() + days); return E.localDate(date); }
   function samples() {
     return [
-      { id: uid(), title: '홈페이지 첫 화면 만들기', category: 'assignment', due: dateOffset(1), importance: 'high', effort: 25, first: '작업 파일을 열고, 첫 화면에 들어갈 제목 한 줄을 적어요.' },
-      { id: uid(), title: '영어 3단원 시험 공부', category: 'study', due: dateOffset(2), importance: 'normal', effort: 45, first: '교재 3단원을 펴고, 첫 번째 문제에 표시해요.' },
-      { id: uid(), title: '책상 위 정리하기', category: 'life', due: '', importance: 'low', effort: 15, first: '책상 위 쓰레기 하나만 집어서 버려요.' }
+      { id: uid(), title: '홈페이지 첫 화면 만들기', category: 'assignment', due: dateOffset(1), importance: 'high', effort: 25 },
+      { id: uid(), title: '영어 3단원 시험 공부', category: 'study', due: dateOffset(2), importance: 'normal', effort: 45 },
+      { id: uid(), title: '책상 위 정리하기', category: 'life', due: '', importance: 'low', effort: 15 }
     ].map((task, index) => ({ ...task, createdAt: Date.now() + index, doneAt: null, deferredOn: null, deferReason: '' }));
   }
   function isTask(task) {
     return task && typeof task.id === 'string' && typeof task.title === 'string' && task.title.trim().length > 0 && task.title.length <= 60
       && Object.hasOwn(categoryNames, task.category) && Object.hasOwn(importanceNames, task.importance)
       && Number.isFinite(task.createdAt) && [15, 25, 45, 60].includes(task.effort)
-      && typeof task.first === 'string' && task.first.length <= 100
       && typeof task.due === 'string' && (!task.due || /^\d{4}-\d{2}-\d{2}$/.test(task.due))
       && (!task.doneAt || Number.isFinite(task.doneAt));
   }
@@ -128,7 +127,6 @@
       $('result-reason').textContent = (state.selectionExcludedId ? '방금 나온 일을 빼고 남은 우선순위에서 골랐어요. ' : '') + E.reason(selected, candidates, E.localDate(), tieCount);
       $('resume-note').hidden = !selected.progressNote;
       $('resume-note-text').textContent = selected.progressNote || '';
-      $('result-action').textContent = selected.first || E.firstSteps[selected.category];
       document.querySelector('.workbench').classList.add('has-selection');
       $('timer-caption').textContent = selected.title;
     } else {
@@ -222,7 +220,7 @@
   function openFocusMode() {
     const task = selectedTask(); if (!task || choosing) return;
     $('focus-mode-task').textContent = task.title;
-    $('focus-mode-action').textContent = task.first || E.firstSteps[task.category];
+    $('focus-mode-context').hidden = !task.progressNote;
     $('focus-mode-note').hidden = !task.progressNote;
     $('focus-mode-note-text').textContent = task.progressNote || '';
     renderTimer();
@@ -276,7 +274,7 @@
       state.selectedId = selection.task.id; choosing = false;
       save(); renderTasks(); renderDecision(selection.tied); renderPlan();
       document.querySelector('.decision-panel').scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'start' });
-      announce(`지금 할 일은 ${selection.task.title}. ${E.reason(selection.task, candidates, E.localDate(), selection.tied)}${selection.task.progressNote ? ' 지난 메모: ' + selection.task.progressNote : ''} 첫 행동: ${selection.task.first || E.firstSteps[selection.task.category]}`);
+      announce(`지금 할 일은 ${selection.task.title}. ${E.reason(selection.task, candidates, E.localDate(), selection.tied)}${selection.task.progressNote ? ' 지난 메모: ' + selection.task.progressNote : ''}`);
       if (autoStart) startFromResult();
     }, autoStart || skip ? 0 : 1650);
   }
@@ -295,7 +293,6 @@
     $('task-no-due').checked = !task?.due; syncDeadline();
     $('task-importance').value = task?.importance || 'normal';
     $('task-effort').value = task?.effort || '25';
-    $('task-first').value = task?.first || '';
     $('task-dialog').showModal(); $('task-name').focus();
   }
   function saveTask(event) {
@@ -307,7 +304,7 @@
     const task = {
       ...(existing || { id: uid(), createdAt: Date.now(), doneAt: null, deferredOn: null, deferReason: '' }),
       title, category: $('task-category').value, due: $('task-no-due').checked ? '' : $('task-due').value, importance: $('task-importance').value,
-      effort: Number($('task-effort').value), first: $('task-first').value.trim()
+      effort: Number($('task-effort').value)
     };
     if (existing) state.tasks[state.tasks.indexOf(existing)] = task;
     else state.tasks.push(task);

@@ -2,12 +2,6 @@
 (function (root) {
   'use strict';
   const importance = { high: 0, normal: 1, low: 2 };
-  const firstSteps = {
-    assignment: '과제 안내를 열고, 오늘 만들 부분의 제목 한 줄을 적어요.',
-    study: '교재나 강의 자료를 펴고, 오늘 볼 첫 페이지를 찾아요.',
-    life: '필요한 물건 하나를 손에 들고, 눈앞의 작은 부분부터 시작해요.',
-    other: '이 일에 필요한 자료나 도구 하나를 꺼내요. 준비부터 시작이에요.'
-  };
   function localDate(date = new Date()) {
     return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
   }
@@ -57,7 +51,7 @@
   function reason(task, tasks, today = localDate(), tieCount) {
     const active = eligible(tasks, today);
     if (active.some(other => compare(other, task, today) < 0)) {
-      return '앞서 정한 일이에요. 다음 선택에서 바뀐 우선순위를 반영해요. 지금은 이 일의 첫 행동부터 해봐요.';
+      return '앞서 정한 일이에요. 다음 선택에서 바뀐 우선순위를 반영해요. 지금은 이 일에 5분만 집중해봐요.';
     }
     const days = dayDifference(task.due, today);
     let text;
@@ -133,7 +127,7 @@
     }
     return { blocks, unallocated, unused: end - cursor };
   }
-  const engine = Object.freeze({ accrue, waitingDays, score, localDate, eligible, compare, rank, pick, dayDifference, dueLabel, reason, bigThree, firstSteps, plan, formatTime });
+  const engine = Object.freeze({ accrue, waitingDays, score, localDate, eligible, compare, rank, pick, dayDifference, dueLabel, reason, bigThree, plan, formatTime });
   root.RescueEngine = engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = engine;
 })(globalThis);
