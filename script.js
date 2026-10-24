@@ -37,7 +37,7 @@
       if (!raw) { state.tasks = samples(); return; }
       const saved = JSON.parse(raw);
       if (!Array.isArray(saved.tasks) || !saved.tasks.every(isTask)) throw new Error('invalid saved tasks');
-      state = { tasks: saved.tasks.slice(0, 100).map(task => ({ ...task, progressNote: typeof task.progressNote === 'string' ? task.progressNote.slice(0, 300) : '' })), sample: Boolean(saved.sample), selectedId: saved.selectedId || null, focus: saved.focus || null, activity: Object.fromEntries(Object.entries(saved.activity || {}).filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && value && Number.isFinite(value.milliseconds) && value.milliseconds >= 0 && Number.isFinite(value.starts) && value.starts >= 0)) };
+      state = { tasks: saved.tasks.slice(0, 100).map(task => ({ ...task, progressNote: typeof task.progressNote === 'string' ? task.progressNote.slice(0, 300) : '' })), sample: Boolean(saved.sample), selectedId: saved.selectedId || null, selectionExcludedId: saved.selectionExcludedId || null, focus: saved.focus || null, activity: Object.fromEntries(Object.entries(saved.activity || {}).filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && value && Number.isFinite(value.milliseconds) && value.milliseconds >= 0 && Number.isFinite(value.starts) && value.starts >= 0)) };
       const selected = selectedTask();
       if (!selected || selected.doneAt || selected.deferredOn === currentDay || selected.pausedOn === currentDay) { state.selectedId = null; state.focus = null; }
       if (state.selectedId && state.focus && Number.isFinite(state.focus.remaining) && state.focus.remaining >= 0 && Number.isFinite(state.focus.duration) && state.focus.duration > 0 && state.focus.duration <= 3600) {
@@ -120,9 +120,12 @@
     $('decision-result').hidden = !selected;
     $('reel').hidden = true;
     $('defer-button').hidden = !selected;
+    $('reroll-button').hidden = !selected;
+    $('quick-start').hidden = Boolean(selected);
     if (selected) {
       $('result-title').textContent = selected.title;
-      $('result-reason').textContent = E.reason(selected, state.tasks, E.localDate(), tieCount);
+      const candidates = state.tasks.filter(task => task.id !== state.selectionExcludedId);
+      $('result-reason').textContent = (state.selectionExcludedId ? '방금 나온 일을 빼고 남은 우선순위에서 골랐어요. ' : '') + E.reason(selected, candidates, E.localDate(), tieCount);
       $('resume-note').hidden = !selected.progressNote;
       $('resume-note-text').textContent = selected.progressNote || '';
       $('result-action').textContent = selected.first || E.firstSteps[selected.category];
@@ -137,7 +140,7 @@
       const title = $('decision-rest').querySelector('h4');
       title.replaceChildren();
       title.append(document.createTextNode(!pending.length && hasDone ? '오늘 목록을' : possible.length ? '이번엔' : pending.length ? '잠시 쉬어도' : '할 일을'), document.createElement('br'), document.createTextNode(!pending.length && hasDone ? '모두 끝냈어요!' : possible.length ? '우리가 고를게요.' : pending.length ? '괜찮아요.' : '하나 적어봐요.'));
-      $('decision-rest').querySelector('.machine-small').textContent = pending.length && !possible.length ? '다시 가능한 일은 목록에서 ‘오늘 다시 하기’을 눌러요.' : !pending.length && hasDone ? '작은 시작이 모여 여기까지. 잘 마무리했어요.' : '버튼 한 번이면, 지금 할 일 하나.';
+      $('decision-rest').querySelector('.machine-small').textContent = pending.length && !possible.length ? '다시 가능한 일은 목록에서 ‘오늘 다시 하기’를 눌러요.' : !pending.length && hasDone ? '작은 시작이 모여 여기까지. 잘 마무리했어요.' : '버튼 한 번이면, 지금 할 일 하나.';
       $('pick-button').textContent = '지금 할 일 정해줘 ✳';
       $('timer-caption').textContent = '할 일이 정해지면 5분만 같이 해봐요.';
     }
@@ -147,6 +150,8 @@
     const selected = Boolean(selectedTask());
     $('pick-button').disabled = choosing || (!selected && !E.eligible(state.tasks).length);
     $('defer-button').disabled = choosing;
+    $('reroll-button').disabled = choosing;
+    $('quick-start').disabled = choosing || !E.eligible(state.tasks).length;
     for (const el of document.querySelectorAll('.task-menu button, .restore-task, .undo-task, #add-task, #add-task-bottom, #sample-button, #clear-button')) el.disabled = choosing;
     $('skip-animation').disabled = choosing;
     $('complete-button').disabled = choosing || !selected;
@@ -183,7 +188,7 @@
     $('focus-mode-time').textContent = $('timer-display').textContent;
     $('focus-mode-state').textContent = $('timer-state').textContent;
     $('focus-mode-toggle').textContent = $('timer-button').textContent;
-    if (selectedTask()) $('pick-button').textContent = running ? '집중 화면 보기 ↗' : finished ? '이 일로 5분 더 하기 ▶' : remaining < focus.duration ? '이 일 이어서 시작하기 ▶' : '이 일로 5분 시작하기 ▶';
+    if (selectedTask()) $('pick-button').textContent = running ? '집중 화면 보기 ↗' : finished ? '이 일로 5분 더 하기 ▶' : remaining < focus.duration ? '이 일 이어서 시작하기 ▶' : '▶ 바로 5분 시작';
   }
   function tick() {
     accountFocus();
@@ -209,7 +214,8 @@
     save(); renderTimer();
   }
   function startFromResult() {
-    if (!selectedTask()) { choose(); return; }
+    if (choosing) return;
+    if (!selectedTask()) { choose({ autoStart: true }); return; }
     if (!focus.endAt || focus.endAt <= Date.now()) timerToggle();
     openFocusMode();
   }
@@ -243,15 +249,20 @@
     toast('오늘의 진행을 남겼어요. 일은 남아 있고 내일 다시 선택돼요.');
     if (E.eligible(state.tasks).length) choose();
   }
-  function choose() {
-    if (choosing || selectedTask()) return;
-    const selection = E.pick(state.tasks);
-    if (!selection) { renderDecision(); toast('할 일을 추가하거나, 잠시 제외한 일을 다시 포함해 주세요.'); return; }
+  function choose({ excludeId = null, autoStart = false } = {}) {
+    if (choosing || (selectedTask() && !excludeId)) return;
+    const candidates = state.tasks.filter(task => task.id !== excludeId);
+    const selection = E.pick(candidates);
+    if (!selection) {
+      const message = excludeId ? '지금 할 수 있는 다른 일이 없어요.' : '할 일을 추가하거나, 잠시 제외한 일을 다시 포함해 주세요.';
+      toast(message); announce(message); return;
+    }
     choosing = true; updateLock(); resetFocus();
+    state.selectedId = null; state.selectionExcludedId = excludeId;
     $('decision-rest').hidden = true; $('decision-result').hidden = true; $('reel').hidden = false;
     $('pick-button').textContent = '지금 할 일을 정하고 있어요…';
     announce('지금 할 일을 정하고 있어요.');
-    const pool = E.eligible(state.tasks);
+    const pool = E.eligible(candidates);
     let reelIndex = 0;
     function showReel() {
       const item = node('div', 'reel-item', pool[reelIndex++ % pool.length].title);
@@ -265,8 +276,9 @@
       state.selectedId = selection.task.id; choosing = false;
       save(); renderTasks(); renderDecision(selection.tied); renderPlan();
       document.querySelector('.decision-panel').scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'start' });
-      announce(`지금 할 일은 ${selection.task.title}. ${E.reason(selection.task, state.tasks, E.localDate(), selection.tied)}${selection.task.progressNote ? ' 지난 메모: ' + selection.task.progressNote : ''} 첫 행동: ${selection.task.first || E.firstSteps[selection.task.category]}`);
-    }, skip ? 0 : 1650);
+      announce(`지금 할 일은 ${selection.task.title}. ${E.reason(selection.task, candidates, E.localDate(), selection.tied)}${selection.task.progressNote ? ' 지난 메모: ' + selection.task.progressNote : ''} 첫 행동: ${selection.task.first || E.firstSteps[selection.task.category]}`);
+      if (autoStart) startFromResult();
+    }, autoStart || skip ? 0 : 1650);
   }
   function openTask(id) {
     if (choosing) return;
@@ -366,7 +378,9 @@
   $('add-task-bottom').addEventListener('click', () => openTask());
   $('task-form').addEventListener('submit', saveTask);
   $('task-name').addEventListener('input', () => $('task-name').setCustomValidity(''));
-  $('pick-button').addEventListener('click', startFromResult);
+  $('pick-button').addEventListener('click', () => { if (selectedTask()) startFromResult(); else choose(); });
+  $('quick-start').addEventListener('click', startFromResult);
+  $('reroll-button').addEventListener('click', () => { const task = selectedTask(); if (task) choose({ excludeId: task.id }); });
   $('pause-today-button').addEventListener('click', openProgressNote);
   $('open-focus').addEventListener('click', openFocusMode);
   $('close-focus').addEventListener('click', closeFocusMode);
