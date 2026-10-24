@@ -12,19 +12,29 @@
     return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
   }
   function eligible(tasks, today = localDate()) {
-    return tasks.filter(task => !task.doneAt && task.deferredOn !== today);
+    return tasks.filter(task => !task.doneAt && task.deferredOn !== today && task.pausedOn !== today);
   }
-  function compare(a, b) {
-    const deadline = (a.due || '9999-12-31').localeCompare(b.due || '9999-12-31');
-    return deadline || ((importance[a.importance] ?? 1) - (importance[b.importance] ?? 1));
+  function waitingDays(task, today = localDate()) {
+    const last = task.lastWorkedAt || task.createdAt;
+    return Math.min(30, Math.max(0, dayDifference(today, localDate(new Date(last)))));
+  }
+  function score(task, today = localDate()) {
+    return ({ high: 40, normal: 20, low: 0 }[task.importance] ?? 20) + waitingDays(task, today) * 2;
+  }
+  function compare(a, b, today = localDate()) {
+    const daysA = dayDifference(a.due, today), daysB = dayDifference(b.due, today);
+    const urgentA = daysA !== null && daysA <= 3, urgentB = daysB !== null && daysB <= 3;
+    if (urgentA !== urgentB) return urgentA ? -1 : 1;
+    if (urgentA) return daysA - daysB || ((importance[a.importance] ?? 1) - (importance[b.importance] ?? 1));
+    return score(b, today) - score(a, today);
   }
   function rank(tasks, today = localDate()) {
-    return eligible(tasks, today).slice().sort((a, b) => compare(a, b) || a.createdAt - b.createdAt);
+    return eligible(tasks, today).slice().sort((a, b) => compare(a, b, today) || a.createdAt - b.createdAt);
   }
   function pick(tasks, today = localDate(), random = Math.random) {
     const ordered = rank(tasks, today);
     if (!ordered.length) return null;
-    const tied = ordered.filter(task => compare(task, ordered[0]) === 0);
+    const tied = ordered.filter(task => compare(task, ordered[0], today) === 0);
     const index = Math.min(tied.length - 1, Math.max(0, Math.floor(random() * tied.length)));
     return { task: tied[index], tied: tied.length };
   }
@@ -46,21 +56,45 @@
   }
   function reason(task, tasks, today = localDate(), tieCount) {
     const active = eligible(tasks, today);
-    if (active.some(other => compare(other, task) < 0)) {
+    if (active.some(other => compare(other, task, today) < 0)) {
       return '앞서 정한 일이에요. 다음 선택에서 바뀐 우선순위를 반영해요. 지금은 이 일의 첫 행동부터 해봐요.';
     }
     const days = dayDifference(task.due, today);
     let text;
     if (days !== null && days < 0) text = '마감이 지난 일이에요. 늦어진 일부터 챙겨봐요.';
     else if (days === 0) text = '오늘 마감이에요. 가장 먼저 챙겨야 할 일이에요.';
-    else if (days === 1) text = '내일 마감이에요. 미리 손대두면 마음이 가벼워져요.';
-    else if (days !== null) text = `${days}일 뒤 마감이에요. 남은 일 중 마감이 가장 가까워요.`;
-    else if (active.length === 1) text = '지금 할 수 있는 일이 하나 있어요. 이 일부터 시작해요.';
-    else text = '마감이 없는 일 중 중요도를 먼저 반영해 골랐어요.';
-    if (task.importance === 'high') text += ' 중요도도 높아요.';
-    const count = tieCount ?? active.filter(other => compare(task, other) === 0).length;
+    else if (days !== null && days <= 3) text = `${days}일 뒤 마감이에요. 3일 안에 마감인 일을 먼저 챙겨요.`;
+    else {
+      const waiting = waitingDays(task, today);
+      text = `임박한 마감이 없어 중요도와 손대지 않은 기간을 함께 반영했어요. 중요도는 ${{high:'높음',normal:'보통',low:'낮음'}[task.importance] || '보통'}이에요.`;
+      if (waiting > 0) text += ` ${waiting === 30 ? '30일 이상' : waiting + '일'} 동안 손대지 않아 우선순위를 높였어요.`;
+    }
+    const count = tieCount ?? active.filter(other => compare(task, other, today) === 0).length;
     if (count > 1) text += ` 같은 우선순위 ${count}개 중 추첨했어요.`;
     return text;
+  }
+  // 실제 실행된 시간만 기록합니다. 종료 시각 이후와 일시 정지 시간은 더하지 않습니다.
+  function accrue(activity, focus, now = Date.now()) {
+    const next = { ...focus, dayMs: { ...(focus.dayMs || {}) }, countedDays: [...(focus.countedDays || [])] };
+    const days = Object.fromEntries(Object.entries(activity).map(([key, value]) => [key, { ...value }]));
+    if (!next.endAt || !Number.isFinite(next.accountedAt)) return { activity: days, focus: next, elapsed: 0 };
+    const end = Math.min(now, next.endAt);
+    let cursor = Math.min(next.accountedAt, end), elapsed = Math.max(0, end - next.accountedAt);
+    while (cursor < end) {
+      const date = new Date(cursor), key = localDate(date);
+      const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).getTime();
+      const length = Math.min(end, midnight) - cursor;
+      days[key] ||= { milliseconds: 0, starts: 0 };
+      days[key].milliseconds += length;
+      next.dayMs[key] = (next.dayMs[key] || 0) + length;
+      if (next.dayMs[key] >= 1000 && !next.countedDays.includes(key)) {
+        days[key].starts += 1; next.countedDays.push(key);
+      }
+      cursor += length;
+    }
+    next.accountedAt = end;
+    next.remaining = Math.max(0, (next.endAt - now) / 1000);
+    return { activity: days, focus: next, elapsed };
   }
   function bigThree(tasks, selectedId, today = localDate()) {
     const ordered = rank(tasks, today);
@@ -99,7 +133,7 @@
     }
     return { blocks, unallocated, unused: end - cursor };
   }
-  const engine = Object.freeze({ localDate, eligible, compare, rank, pick, dayDifference, dueLabel, reason, bigThree, firstSteps, plan, formatTime });
+  const engine = Object.freeze({ accrue, waitingDays, score, localDate, eligible, compare, rank, pick, dayDifference, dueLabel, reason, bigThree, firstSteps, plan, formatTime });
   root.RescueEngine = engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = engine;
 })(globalThis);
