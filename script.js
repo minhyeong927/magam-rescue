@@ -100,7 +100,7 @@
       item.append(tags);
       if (task.progressNote) item.append(node('p', 'task-progress-note', `지난 메모 · ${task.progressNote}`));
       if (deferred) {
-        const reason = node('div', 'defer-reason'); reason.append(node('span', '', paused ? '오늘은 여기까지 · 일은 계속 남아 있어요' : `잠시 제외 · ${task.deferReason || '지금은 어려워요'}`), actionButton('다시 포함', 'restore-task', task.id)); item.append(reason);
+        const reason = node('div', 'defer-reason'); reason.append(node('span', '', paused ? '오늘은 여기까지 · 일은 계속 남아 있어요' : `잠시 제외 · ${task.deferReason || '지금은 어려워요'}`), actionButton('오늘 다시 하기', 'restore-task', task.id)); item.append(reason);
       }
       list.append(item);
     }
@@ -137,7 +137,7 @@
       const title = $('decision-rest').querySelector('h4');
       title.replaceChildren();
       title.append(document.createTextNode(!pending.length && hasDone ? '오늘 목록을' : possible.length ? '이번엔' : pending.length ? '잠시 쉬어도' : '할 일을'), document.createElement('br'), document.createTextNode(!pending.length && hasDone ? '모두 끝냈어요!' : possible.length ? '우리가 고를게요.' : pending.length ? '괜찮아요.' : '하나 적어봐요.'));
-      $('decision-rest').querySelector('.machine-small').textContent = pending.length && !possible.length ? '다시 가능한 일은 목록에서 ‘다시 포함’을 눌러요.' : !pending.length && hasDone ? '작은 시작이 모여 여기까지. 잘 마무리했어요.' : '버튼 한 번이면, 지금 할 일 하나.';
+      $('decision-rest').querySelector('.machine-small').textContent = pending.length && !possible.length ? '다시 가능한 일은 목록에서 ‘오늘 다시 하기’을 눌러요.' : !pending.length && hasDone ? '작은 시작이 모여 여기까지. 잘 마무리했어요.' : '버튼 한 번이면, 지금 할 일 하나.';
       $('pick-button').textContent = '지금 할 일 정해줘 ✳';
       $('timer-caption').textContent = '할 일이 정해지면 5분만 같이 해봐요.';
     }
@@ -152,6 +152,7 @@
     $('complete-button').disabled = choosing || !selected;
     $('timer-button').disabled = choosing || !selected;
     $('pause-today-button').disabled = choosing || !selected;
+    $('open-focus').disabled = choosing || !selected;
   }
   function renderStats() {
     const today = state.activity[E.localDate()] || { milliseconds: 0, starts: 0 };
@@ -179,7 +180,10 @@
     $('timer-face').classList.toggle('running', running); $('timer-face').classList.toggle('finished', finished);
     $('timer-state').textContent = finished ? '시작해낸 5분, 수고했어요' : running ? '지금은 이것 하나에만' : remaining < focus.duration ? '잠깐 쉬는 중' : '작은 시작, 충분한 5분';
     $('timer-button').textContent = running ? '잠깐 멈추기 Ⅱ' : finished ? '5분 더 하기 ▶' : remaining < focus.duration ? '이어서 시작하기 ▶' : '5분 시작하기 ▶';
-    if (selectedTask()) $('pick-button').textContent = running ? '집중 화면 보기 ↓' : finished ? '이 일로 5분 더 하기 ▶' : remaining < focus.duration ? '이 일 이어서 시작하기 ▶' : '이 일로 5분 시작하기 ▶';
+    $('focus-mode-time').textContent = $('timer-display').textContent;
+    $('focus-mode-state').textContent = $('timer-state').textContent;
+    $('focus-mode-toggle').textContent = $('timer-button').textContent;
+    if (selectedTask()) $('pick-button').textContent = running ? '집중 화면 보기 ↗' : finished ? '이 일로 5분 더 하기 ▶' : remaining < focus.duration ? '이 일 이어서 시작하기 ▶' : '이 일로 5분 시작하기 ▶';
   }
   function tick() {
     accountFocus();
@@ -207,9 +211,20 @@
   function startFromResult() {
     if (!selectedTask()) { choose(); return; }
     if (!focus.endAt || focus.endAt <= Date.now()) timerToggle();
-    document.querySelector('.focus-panel').scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'center' });
-    $('timer-button').focus({ preventScroll: true });
+    openFocusMode();
   }
+  function openFocusMode() {
+    const task = selectedTask(); if (!task || choosing) return;
+    $('focus-mode-task').textContent = task.title;
+    $('focus-mode-action').textContent = task.first || E.firstSteps[task.category];
+    $('focus-mode-note').hidden = !task.progressNote;
+    $('focus-mode-note-text').textContent = task.progressNote || '';
+    renderTimer();
+    if (!$('focus-dialog').open) $('focus-dialog').showModal();
+    document.body.classList.add('focus-mode-open');
+    $('focus-mode-toggle').focus();
+  }
+  function closeFocusMode() { $('focus-dialog').close(); }
   function openProgressNote() {
     const task = selectedTask(); if (!task || choosing) return;
     accountFocus();
@@ -353,6 +368,12 @@
   $('task-name').addEventListener('input', () => $('task-name').setCustomValidity(''));
   $('pick-button').addEventListener('click', startFromResult);
   $('pause-today-button').addEventListener('click', openProgressNote);
+  $('open-focus').addEventListener('click', openFocusMode);
+  $('close-focus').addEventListener('click', closeFocusMode);
+  $('focus-dialog').addEventListener('close', () => document.body.classList.remove('focus-mode-open'));
+  $('focus-mode-toggle').addEventListener('click', timerToggle);
+  $('focus-mode-pause').addEventListener('click', () => { closeFocusMode(); openProgressNote(); });
+  $('focus-mode-complete').addEventListener('click', () => { closeFocusMode(); completeTask(); });
   $('progress-form').addEventListener('submit', event => { event.preventDefault(); pauseToday($('progress-note').value); });
   $('progress-skip').addEventListener('click', () => pauseToday());
   $('progress-dialog').addEventListener('close', () => { pendingNoteId = null; });
