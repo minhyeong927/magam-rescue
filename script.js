@@ -392,10 +392,23 @@
   $('progress-skip').addEventListener('click', () => pauseToday());
   $('progress-dialog').addEventListener('close', () => { pendingNoteId = null; });
   function syncDeadline() {
-    $('task-due').disabled = $('task-no-due').checked;
+    // 날짜는 항상 직접 선택할 수 있고, 선택 여부에 따라 마감 없음을 맞춥니다.
     $('task-due').required = !$('task-no-due').checked;
   }
-  $('task-no-due').addEventListener('change', syncDeadline);
+  $('task-no-due').addEventListener('change', () => {
+    if ($('task-no-due').checked) $('task-due').value = '';
+    syncDeadline();
+  });
+  function syncSelectedDate() {
+    $('task-no-due').checked = !$('task-due').value;
+    syncDeadline();
+  }
+  $('task-due').addEventListener('input', syncSelectedDate);
+  $('task-due').addEventListener('change', syncSelectedDate);
+  $('task-due').addEventListener('click', () => {
+    // 지원하는 브라우저에서는 아이콘뿐 아니라 날짜 칸 전체로 달력을 엽니다.
+    try { $('task-due').showPicker?.(); } catch (error) { /* 기본 날짜 입력으로 계속합니다. */ }
+  });
   $('timer-button').addEventListener('click', timerToggle);
   $('complete-button').addEventListener('click', completeTask);
   $('defer-button').addEventListener('click', () => $('defer-dialog').showModal());
