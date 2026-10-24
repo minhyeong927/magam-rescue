@@ -6,6 +6,7 @@
   const categoryNames = { assignment: '과제·발표', study: '시험·공부', life: '일상·정리', other: '그 밖의 일' };
   const importanceNames = { high: '중요도 높음', normal: '중요도 보통', low: '중요도 낮음' };
   let state = { tasks: [], sample: true, selectedId: null, focus: null, activity: {} };
+  let pendingNoteId = null;
   let editingId = null, choosing = false, timerInterval = null, reelInterval = null, pickTimeout = null;
   let toastTimeout = null, pendingConfirmation = null, storageAvailable = true, planShown = false;
   let currentDay = E.localDate();
@@ -36,7 +37,7 @@
       if (!raw) { state.tasks = samples(); return; }
       const saved = JSON.parse(raw);
       if (!Array.isArray(saved.tasks) || !saved.tasks.every(isTask)) throw new Error('invalid saved tasks');
-      state = { tasks: saved.tasks.slice(0, 100), sample: Boolean(saved.sample), selectedId: saved.selectedId || null, focus: saved.focus || null, activity: Object.fromEntries(Object.entries(saved.activity || {}).filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && value && Number.isFinite(value.milliseconds) && value.milliseconds >= 0 && Number.isFinite(value.starts) && value.starts >= 0)) };
+      state = { tasks: saved.tasks.slice(0, 100).map(task => ({ ...task, progressNote: typeof task.progressNote === 'string' ? task.progressNote.slice(0, 300) : '' })), sample: Boolean(saved.sample), selectedId: saved.selectedId || null, focus: saved.focus || null, activity: Object.fromEntries(Object.entries(saved.activity || {}).filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && value && Number.isFinite(value.milliseconds) && value.milliseconds >= 0 && Number.isFinite(value.starts) && value.starts >= 0)) };
       const selected = selectedTask();
       if (!selected || selected.doneAt || selected.deferredOn === currentDay || selected.pausedOn === currentDay) { state.selectedId = null; state.focus = null; }
       if (state.selectedId && state.focus && Number.isFinite(state.focus.remaining) && state.focus.remaining >= 0 && Number.isFinite(state.focus.duration) && state.focus.duration > 0 && state.focus.duration <= 3600) {
@@ -97,6 +98,7 @@
       tags.append(node('span', `due-tag${urgent ? ' urgent' : ''}`, E.dueLabel(task)), node('span', '', `${task.effort}분`));
       if (task.importance === 'high') tags.append(node('span', 'high-tag', '중요'));
       item.append(tags);
+      if (task.progressNote) item.append(node('p', 'task-progress-note', `지난 메모 · ${task.progressNote}`));
       if (deferred) {
         const reason = node('div', 'defer-reason'); reason.append(node('span', '', paused ? '오늘은 여기까지 · 일은 계속 남아 있어요' : `잠시 제외 · ${task.deferReason || '지금은 어려워요'}`), actionButton('다시 포함', 'restore-task', task.id)); item.append(reason);
       }
@@ -121,6 +123,8 @@
     if (selected) {
       $('result-title').textContent = selected.title;
       $('result-reason').textContent = E.reason(selected, state.tasks, E.localDate(), tieCount);
+      $('resume-note').hidden = !selected.progressNote;
+      $('resume-note-text').textContent = selected.progressNote || '';
       $('result-action').textContent = selected.first || E.firstSteps[selected.category];
       document.querySelector('.workbench').classList.add('has-selection');
       $('timer-caption').textContent = selected.title;
@@ -206,8 +210,19 @@
     document.querySelector('.focus-panel').scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'center' });
     $('timer-button').focus({ preventScroll: true });
   }
-  function pauseToday() {
+  function openProgressNote() {
     const task = selectedTask(); if (!task || choosing) return;
+    accountFocus();
+    if (focus.endAt) { focus.endAt = null; focus.accountedAt = null; clearInterval(timerInterval); timerInterval = null; }
+    save(); renderTimer(); pendingNoteId = task.id;
+    $('progress-task-title').textContent = task.title;
+    $('progress-note').value = '';
+    $('progress-dialog').showModal(); $('progress-note').focus();
+  }
+  function pauseToday(note = '') {
+    const task = selectedTask(); if (!task || choosing || task.id !== pendingNoteId) return;
+    if (note.trim()) task.progressNote = note.trim().slice(0, 300);
+    $('progress-dialog').close();
     accountFocus(); task.pausedOn = E.localDate();
     resetFocus(); state.selectedId = null; save(); renderTasks(); renderDecision(); renderPlan();
     toast('오늘의 진행을 남겼어요. 일은 남아 있고 내일 다시 선택돼요.');
@@ -235,7 +250,7 @@
       state.selectedId = selection.task.id; choosing = false;
       save(); renderTasks(); renderDecision(selection.tied); renderPlan();
       document.querySelector('.decision-panel').scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'start' });
-      announce(`지금 할 일은 ${selection.task.title}. ${E.reason(selection.task, state.tasks, E.localDate(), selection.tied)} 첫 행동: ${selection.task.first || E.firstSteps[selection.task.category]}`);
+      announce(`지금 할 일은 ${selection.task.title}. ${E.reason(selection.task, state.tasks, E.localDate(), selection.tied)}${selection.task.progressNote ? ' 지난 메모: ' + selection.task.progressNote : ''} 첫 행동: ${selection.task.first || E.firstSteps[selection.task.category]}`);
     }, skip ? 0 : 1650);
   }
   function openTask(id) {
@@ -337,7 +352,10 @@
   $('task-form').addEventListener('submit', saveTask);
   $('task-name').addEventListener('input', () => $('task-name').setCustomValidity(''));
   $('pick-button').addEventListener('click', startFromResult);
-  $('pause-today-button').addEventListener('click', pauseToday);
+  $('pause-today-button').addEventListener('click', openProgressNote);
+  $('progress-form').addEventListener('submit', event => { event.preventDefault(); pauseToday($('progress-note').value); });
+  $('progress-skip').addEventListener('click', () => pauseToday());
+  $('progress-dialog').addEventListener('close', () => { pendingNoteId = null; });
   function syncDeadline() {
     $('task-due').disabled = $('task-no-due').checked;
     $('task-due').required = !$('task-no-due').checked;
