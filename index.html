@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f1e7">
+  <meta name="description" content="할 일은 많은데 시작이 어렵다면. 마감구조대가 지금 할 일 하나와 첫 행동을 정해 드립니다.">
+  <title>마감구조대 — 고민은 여기까지. 지금은, 딱 하나.</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script src="engine.js" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">바로 체험하기</a>
+  <svg class="svg-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 5l7 7-7 7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 2 2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4Z"/></symbol>
+  </svg>
+
+  <header class="header">
+    <a href="#" class="brand" aria-label="마감구조대 처음으로"><span class="brand-mark"><svg><use href="#i-spark"/></svg></span>마감구조대<span class="brand-dot">®</span></a>
+    <nav aria-label="주요 메뉴"><a href="#why">우리가 필요한 순간</a><a href="#how">사용 방법</a><a href="#workspace" class="nav-cta">내 할 일 구조하기 <span aria-hidden="true">↗</span></a></nav>
+  </header>
+
+  <main>
+    <section class="hero wrap" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot"></span> FOR THE OVERTHINKERS. AND YOU.</p>
+        <h1 id="hero-title">고민은 여기까지.<br>지금은, <span class="highlight">딱 하나.</span></h1>
+        <p class="hero-description">할 일은 산더미인데, 뭐부터 할지 모르겠다면.<br>우리가 하나 정해줄게요. 당신은 <strong>5분만 시작해요.</strong></p>
+        <a href="#workspace" class="button button-dark hero-cta">지금 할 일 정하러 가기 <svg><use href="#i-arrow"/></svg></a>
+        <p class="micro-copy">가입 없이 바로 · 무료 체험 · 내 브라우저에 저장</p>
+        <div class="hero-bottom"><span class="mono">LESS THINKING,<br>MORE DOING.</span><span class="scroll-hint">아래에서 직접 해봐요 <span aria-hidden="true">↓</span></span></div>
+      </div>
+      <div class="hero-art" aria-label="여러 할 일 중 하나를 골라 5분 동안 시작하는 서비스 예시">
+        <div class="art-grid"></div>
+        <div class="art-note"><span class="handwritten">할 일 12개.<br>시작한 일 0개.</span><svg viewBox="0 0 80 50" aria-hidden="true"><path d="M3 8C35 1 31 45 69 34m-12-7 14 7-12 8"/></svg></div>
+        <div class="floating-task task-one"><span>영어 시험 공부</span><span>?</span></div>
+        <div class="floating-task task-two"><span>발표 자료 만들기</span><span>?</span></div>
+        <div class="hero-ticket"><div class="ticket-top"><span class="mono">YOUR NEXT MOVE</span><span class="tiny-dot"></span></div><p>다른 생각은 잠깐.</p><h2>홈페이지 과제</h2><div class="ticket-action"><span class="step-badge">01</span><span>파일을 열고<br><strong>제목 한 줄부터 적어요.</strong></span></div><div class="ticket-bottom"><span>일단, 5분만</span><strong class="mono">05:00 <span>↗</span></strong></div></div>
+        <div class="sticker"><span>결정은 우리가.</span><strong>시작은 당신이!</strong><svg><use href="#i-spark"/></svg></div>
+        <span class="art-caption mono">ILLUSTRATIVE DEMO / 실제 체험은 아래에서</span>
+      </div>
+    </section>
+
+    <div class="ticker" aria-hidden="true"><div><span>계획만 세우다 하루가 끝났나요?</span><span class="ticker-star">✳</span><strong>오늘은 하나부터 끝내봐요.</strong><span class="ticker-star">✳</span><span>START SMALL. START NOW.</span><span class="ticker-star">✳</span><span>고민할 시간에, 딱 5분.</span></div></div>
+
+    <section id="why" class="why-section wrap" aria-labelledby="why-title"><p class="eyebrow section-index">01 / WHY WE EXIST</p><div class="why-layout"><h2 id="why-title">할 일이 없는 게 아니라,<br><span class="muted">첫 단추가 어려운 거니까.</span></h2><div class="why-copy"><p>목록을 써도, 예쁜 플래너를 사도<br>“그래서 뭐부터 하지?”에서 멈추는 날이 있어요.</p><p>마감구조대는 과제와 시험이 겹친 대학생을 위해<br><strong>우선순위를 정하고, 시작할 행동 하나를 건네는 서비스</strong>예요.</p></div></div><div class="before-after"><div><span class="mono">BEFORE</span><p>“이것도 해야 하고, 저것도 해야 하는데…”</p><span class="scribble" aria-hidden="true">↝ ↜ ? ↝</span></div><span class="transition-arrow" aria-hidden="true">→</span><div><span class="mono">WITH 마감구조대</span><p>“지금은 <strong>이것부터, 5분만.</strong>”</p><span class="mini-check"><svg><use href="#i-check"/></svg></span></div></div></section>
+
+    <section id="how" class="how-section wrap" aria-labelledby="how-title"><div class="section-heading"><div><p class="eyebrow section-index">02 / HOW IT WORKS</p><h2 id="how-title">결정은 줄이고.<br>시작은 가볍게.</h2></div><p class="section-aside">완벽한 하루를 계획하기 전에,<br>지금 할 하나를 시작해요.</p></div><div class="steps"><article><span class="step-number mono">01</span><h3>머릿속 할 일을 꺼내요.</h3><p>과제, 시험 공부, 밀린 정리까지.<br>이름과 마감만 적어도 충분해요.</p><span class="step-graphic graphic-list" aria-hidden="true">+ 영어 공부<br>+ 홈페이지 과제<br>+ 방 정리</span></article><article><span class="step-number mono">02</span><h3>하나, 우리가 정해요.</h3><p>마감이 가까운 일부터, 중요도를 반영해.<br>같은 조건이면 추첨으로 결정해요.</p><span class="step-graphic graphic-pick" aria-hidden="true"><span>?</span><strong>딱 하나 ↗</strong><span>?</span></span></article><article><span class="step-number mono">03</span><h3>일단 5분만 시작해요.</h3><p>첫 행동을 확인하고 타이머를 켜요.<br>5분 뒤에 계속할지는 그때 정해도 돼요.</p><span class="step-graphic graphic-timer mono" aria-hidden="true">05:00 <span>▶</span></span></article></div></section>
+
+    <section id="workspace" class="workspace-section" aria-labelledby="workspace-title">
+      <div class="wrap"><div class="section-heading workspace-heading"><div><p class="eyebrow section-index">03 / YOUR TURN</p><h2 id="workspace-title">자, 이제 하나 정해볼까요?</h2></div><div class="date-label"><span class="status-dot"></span><time id="today-label"></time></div></div>
+      <div class="workspace-bar"><p id="data-hint">예시 할 일이 담겨 있어요. 내 할 일로 바꿔보세요.</p><div><button id="sample-button" class="text-button">예시 불러오기</button><span aria-hidden="true">/</span><button id="clear-button" class="text-button">목록 비우기</button></div></div>
+      <div class="workbench">
+        <section class="task-panel" aria-labelledby="task-title"><div class="panel-heading"><h3 id="task-title">머릿속 할 일 <span id="task-count" class="count-badge">0</span></h3><button id="add-task" class="icon-button" aria-label="할 일 추가"><svg><use href="#i-plus"/></svg></button></div><p class="panel-caption">완벽하게 정리하지 않아도 괜찮아요.</p><ul id="task-list" class="task-list"></ul><button id="add-task-bottom" class="add-task-bottom"><span>＋</span> 할 일 하나 더 적기</button><details class="completed-details"><summary>끝낸 일 <span id="done-count">0</span></summary><ul id="completed-list"></ul></details></section>
+
+        <section class="decision-panel" aria-labelledby="decision-heading"><div class="machine-label"><span class="status-dot"></span><h3 id="decision-heading" class="mono">THE DECISION MACHINE</h3><span class="mono">No. 001</span></div><div id="machine" class="machine"><div class="machine-corner corner-tl"></div><div class="machine-corner corner-tr"></div><div class="machine-corner corner-bl"></div><div class="machine-corner corner-br"></div><div id="decision-rest" class="decision-rest"><div class="machine-star" aria-hidden="true">✳</div><p class="machine-kicker">고민은 잠깐 내려놓고</p><h4>이번엔<br>우리가 고를게요.</h4><p class="machine-small">버튼 한 번이면, 지금 할 일 하나.</p></div><div id="reel" class="reel" hidden aria-hidden="true"><span class="mono">PICKING YOUR NEXT MOVE…</span><div id="reel-window" class="reel-window"></div><p>마감과 중요도를 확인하고 있어요.</p></div><div id="decision-result" class="decision-result" hidden><p class="result-eyebrow"><span>↗</span> 지금 할 일은 이거예요</p><h4 id="result-title"></h4><p id="result-reason" class="result-reason"></p><div class="first-action"><span class="mono">FIRST SMALL STEP</span><p id="result-action"></p></div><span class="result-footnote">다 끝내려 하지 말고, 5분만 손대봐요.</span></div></div><button id="pick-button" class="button button-lime pick-button">지금 할 일 정해줘 <svg><use href="#i-spark"/></svg></button><label class="motion-option"><input id="skip-animation" type="checkbox"> 추첨 애니메이션 건너뛰기</label><p class="decision-explainer">급한 일부터 고르고, 같은 조건일 때만 추첨해요.</p><button id="defer-button" class="defer-button" hidden>지금 할 수 없는 일이에요 ↗</button></section>
+
+        <section class="focus-panel" aria-labelledby="focus-title"><div class="panel-heading"><h3 id="focus-title">시작은 작게</h3><span class="focus-icon" aria-hidden="true">↗</span></div><p class="panel-caption" id="timer-caption">할 일이 정해지면 5분만 같이 해봐요.</p><div id="timer-face" class="timer-face"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="timer-track" cx="100" cy="100" r="88"/><circle id="timer-progress" class="timer-progress" cx="100" cy="100" r="88"/></svg><div><span id="timer-display" class="mono">05:00</span><span id="timer-state">작은 시작, 충분한 5분</span></div></div><button id="timer-button" class="button button-dark timer-button" disabled>5분 시작하기 <span aria-hidden="true">▶</span></button><button id="complete-button" class="button complete-button" disabled><svg><use href="#i-check"/></svg> 이 일 끝냈어요</button><button id="extend-button" class="text-button extend-button" hidden>5분 더 이어가기 ＋</button><div class="focus-note"><span aria-hidden="true">✳</span><p>5분을 채웠다고<br>일을 끝내야 하는 건 아니에요.<br><strong>시작한 것만으로 한 걸음.</strong></p></div><div class="progress-summary"><div><span>오늘 끝낸 일</span><strong id="today-done">0개</strong></div><div class="summary-track"><span id="summary-progress"></span></div></div></section>
+      </div>
+
+      <details id="plan-details" class="plan-details"><summary><span><span class="mono">BIG 3 & TIMEBOX</span><strong>오늘의 흐름도 보고 싶다면</strong></span><span class="expand-mark" aria-hidden="true">＋</span></summary><div class="plan-content"><div class="big3-panel"><p class="eyebrow">오늘 먼저 챙길 최대 3가지</p><p class="plan-description">직접 고를 필요 없어요. 지금 할 일을 맨 앞에 두고,<br>남은 우선순위를 함께 보여드려요.</p><ol id="big3-list"></ol></div><div class="timebox-panel"><form id="plan-form"><label>시작 시간<input id="plan-start" type="time" value="19:00" required></label><label>종료 시간<input id="plan-end" type="time" value="22:00" required></label><button type="submit" class="button button-small">시간 배정하기 ↗</button></form><p class="plan-description">오늘 이 일에 쓸 시간만 배정해요. 일 사이에는 5분씩 쉬어요.</p><p id="plan-message" role="status"></p><ol id="timeline" class="timeline"></ol></div></div></details>
+      <p class="storage-note" id="storage-note">입력한 내용은 이 브라우저에만 저장돼요. 다른 사람에게 파일을 보내도 내 할 일은 전달되지 않아요.</p>
+      </div>
+    </section>
+
+    <section class="faq-section wrap" aria-labelledby="faq-title"><div><p class="eyebrow section-index">A FEW GOOD QUESTIONS</p><h2 id="faq-title">시작 전에,<br>궁금할 수 있어요.</h2></div><div class="faq-list"><details><summary>할 일을 정말 아무거나 뽑나요?<span>＋</span></summary><p>마감일이 빠른 일을 먼저, 마감일이 같으면 중요도가 높은 일을 먼저 골라요. 두 조건이 모두 같은 일끼리만 무작위로 선택해요. 결과에는 고른 이유도 함께 표시돼요.</p></details><details><summary>추천받은 일을 지금 할 수 없다면요?<span>＋</span></summary><p>‘지금 할 수 없는 일이에요’를 누르고 이유를 고르면 이번 선택에서 잠시 제외해요. 다음 가능한 일을 바로 정해드려요. 제외한 일은 목록의 ‘다시 포함’으로 되돌릴 수 있어요.</p></details><details><summary>Big 3도 제가 직접 정해야 하나요?<span>＋</span></summary><p>아니요. ‘오늘의 흐름’에서 최대 3개를 자동으로 보여줘요. 할 일이 1개면 1개만, 오늘 시간이 부족하면 들어가지 못한 분량을 따로 알려드려요. 세 가지를 모두 끝내야 한다는 뜻은 아니에요.</p></details><details><summary>앱 설치나 회원가입이 필요한가요?<span>＋</span></summary><p>이 버전은 브라우저에서 바로 사용하는 무료 웹 체험이에요. 로그인, 설치, 외부 서비스 연결 없이 동작해요. 입력한 내용은 해당 브라우저에 저장되며, 브라우저 설정에 따라 저장이 제한될 수 있어요.</p></details></div></section>
+    <section class="closing wrap"><span class="closing-star" aria-hidden="true">✳</span><h2>고민 하나 덜고,<br>시작 하나 더.</h2><a class="button button-dark" href="#workspace">내 첫 행동 정하기 <svg><use href="#i-arrow"/></svg></a></section>
+  </main>
+  <footer class="footer wrap"><a class="brand" href="#"><span class="brand-mark"><svg><use href="#i-spark"/></svg></span>마감구조대</a><span>결정은 우리가. 시작은 당신이.</span><span class="mono">STUDENT PROJECT · WEB PROTOTYPE</span></footer>
+
+  <dialog id="task-dialog" class="task-dialog" aria-labelledby="task-dialog-title"><form id="task-form"><div class="dialog-top"><p class="eyebrow">OFF YOUR MIND, ON THE LIST.</p><button type="button" class="icon-button" data-close aria-label="창 닫기"><svg><use href="#i-close"/></svg></button></div><h2 id="task-dialog-title">할 일 하나 꺼내놓기</h2><p class="dialog-description">이름과 마감부터. 나머지는 기본값으로 둬도 돼요.</p><label class="field-label" for="task-name">무엇을 해야 하나요? <span>필수</span></label><input id="task-name" name="title" type="text" maxlength="60" placeholder="예: 영어 3단원 시험 공부" required autocomplete="off"><div class="field-row"><label>어떤 일인가요?<select id="task-category"><option value="assignment">과제 · 발표</option><option value="study">시험 · 공부</option><option value="life">일상 · 정리</option><option value="other">그 밖의 일</option></select></label><label>언제까지인가요?<input id="task-due" type="date"></label></div><details class="extra-fields"><summary>조금 더 알려주기 <span>선택</span></summary><div class="field-row"><label>중요도<select id="task-importance"><option value="normal">보통</option><option value="high">높음</option><option value="low">낮음</option></select></label><label>오늘 투자할 시간<select id="task-effort"><option value="15">15분</option><option value="25" selected>25분</option><option value="45">45분</option><option value="60">60분</option></select></label></div><label>첫 행동을 미리 적어둘까요?<input id="task-first" type="text" maxlength="100" placeholder="비워두면 유형에 맞게 안내해 드려요"></label></details><button type="submit" id="save-task" class="button button-dark">목록에 내려놓기 ＋</button></form></dialog>
+
+  <dialog id="defer-dialog" class="small-dialog" aria-labelledby="defer-title"><div class="dialog-top"><p class="eyebrow">THAT'S OKAY.</p><button type="button" class="icon-button" data-close aria-label="창 닫기"><svg><use href="#i-close"/></svg></button></div><h2 id="defer-title">지금은 어려운가요?</h2><p>이 일은 잠깐 빼두고, 다른 일을 정해줄게요.</p><div class="defer-options"><button data-defer="장소나 준비물이 없어요">장소나 준비물이 없어요 ↗</button><button data-defer="다른 사람을 기다려야 해요">다른 사람을 기다려야 해요 ↗</button><button data-defer="지금 할 여건이 아니에요">지금 할 여건이 아니에요 ↗</button></div></dialog>
+  <dialog id="confirm-dialog" class="small-dialog" aria-labelledby="confirm-title"><p class="eyebrow">A FRESH START</p><h2 id="confirm-title"></h2><p id="confirm-description"></p><div class="confirm-actions"><button class="button button-small" data-close>돌아가기</button><button id="confirm-action" class="button button-dark button-small">계속하기</button></div></dialog>
+  <div id="toast" class="toast" role="status"></div><div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
+</body>
+</html>
