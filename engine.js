@@ -67,28 +67,75 @@
     if (count > 1) text += ` 같은 우선순위 ${count}개 중 추첨했어요.`;
     return text;
   }
-  // 실제 실행된 시간만 기록합니다. 종료 시각 이후와 일시 정지 시간은 더하지 않습니다.
+  function freshFocus() {
+    return { version: 2, elapsedMs: 0, duration: 300, running: false, accountedAt: null, milestoneNotified: false, dayMs: {}, countedDays: [] };
+  }
+  function restoreFocus(saved, now = Date.now()) {
+    const next = freshFocus();
+    if (!saved || typeof saved !== 'object') return next;
+    next.dayMs = saved.dayMs || {};
+    next.countedDays = Array.isArray(saved.countedDays) ? saved.countedDays : [];
+    if (saved.version === 2 && Number.isFinite(saved.elapsedMs) && saved.elapsedMs >= 0) {
+      next.elapsedMs = saved.elapsedMs;
+      next.running = saved.running === true;
+      next.accountedAt = next.running && Number.isFinite(saved.accountedAt) ? saved.accountedAt : next.running ? now : null;
+      next.milestoneNotified = Boolean(saved.milestoneNotified);
+    } else if (Number.isFinite(saved.remaining) && Number.isFinite(saved.duration) && saved.duration > 0) {
+      // 이전 버전은 5분에서 멈췄으므로, 업데이트 이전의 초과 시간을 소급하지 않습니다.
+      next.elapsedMs = Math.max(0, Math.min(300, saved.duration - saved.remaining)) * 1000;
+      if (Number.isFinite(saved.endAt)) {
+        const boundary = Math.min(now, saved.endAt);
+        const last = Number.isFinite(saved.accountedAt) ? saved.accountedAt : saved.endAt - saved.remaining * 1000;
+        next.elapsedMs = Math.min(300000, next.elapsedMs + Math.max(0, boundary - last));
+        next.running = saved.endAt > now;
+        // 아직 집계되지 않은 구버전 시간은 다음 accrue에서 한 번만 기록합니다.
+        next.legacyUntil = boundary;
+        next.legacyAccountedAt = last;
+        next.accountedAt = next.running ? now : null;
+      }
+      next.milestoneNotified = next.elapsedMs >= 300000;
+    }
+    return next;
+  }
+  function focusView(focus, now = Date.now()) {
+    const elapsedMs = focus.elapsedMs + (focus.running && Number.isFinite(focus.accountedAt) ? Math.max(0, now - focus.accountedAt) : 0);
+    const overtime = elapsedMs >= focus.duration * 1000;
+    return { elapsedMs, overtime, seconds: overtime ? Math.floor((elapsedMs - focus.duration * 1000) / 1000) : Math.ceil((focus.duration * 1000 - elapsedMs) / 1000) };
+  }
+  // 실행 시간만 기록하며, 5분 이후에도 같은 세션을 계속 집계합니다.
   function accrue(activity, focus, now = Date.now()) {
     const next = { ...focus, dayMs: { ...(focus.dayMs || {}) }, countedDays: [...(focus.countedDays || [])] };
     const days = Object.fromEntries(Object.entries(activity).map(([key, value]) => [key, { ...value }]));
-    if (!next.endAt || !Number.isFinite(next.accountedAt)) return { activity: days, focus: next, elapsed: 0 };
-    const end = Math.min(now, next.endAt);
-    let cursor = Math.min(next.accountedAt, end), elapsed = Math.max(0, end - next.accountedAt);
-    while (cursor < end) {
-      const date = new Date(cursor), key = localDate(date);
-      const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).getTime();
-      const length = Math.min(end, midnight) - cursor;
-      days[key] ||= { milliseconds: 0, starts: 0 };
-      days[key].milliseconds += length;
-      next.dayMs[key] = (next.dayMs[key] || 0) + length;
-      if (next.dayMs[key] >= 1000 && !next.countedDays.includes(key)) {
-        days[key].starts += 1; next.countedDays.push(key);
+    let lastAt = null;
+    function record(start, end) {
+      if (end > start) lastAt = end;
+      let cursor = start;
+      while (cursor < end) {
+        const date = new Date(cursor), key = localDate(date);
+        const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1).getTime();
+        const length = Math.min(end, midnight) - cursor;
+        days[key] ||= { milliseconds: 0, starts: 0 };
+        days[key].milliseconds += length;
+        next.dayMs[key] = (next.dayMs[key] || 0) + length;
+        if (next.dayMs[key] >= 1000 && !next.countedDays.includes(key)) {
+          days[key].starts += 1; next.countedDays.push(key);
+        }
+        cursor += length;
       }
-      cursor += length;
     }
-    next.accountedAt = end;
-    next.remaining = Math.max(0, (next.endAt - now) / 1000);
-    return { activity: days, focus: next, elapsed };
+    let elapsed = 0;
+    if (Number.isFinite(next.legacyUntil) && Number.isFinite(next.legacyAccountedAt)) {
+      const end = Math.max(next.legacyAccountedAt, next.legacyUntil);
+      record(next.legacyAccountedAt, end); elapsed += end - next.legacyAccountedAt;
+      delete next.legacyUntil; delete next.legacyAccountedAt;
+    }
+    if (next.running && Number.isFinite(next.accountedAt)) {
+      const end = Math.max(next.accountedAt, now);
+      const delta = end - next.accountedAt;
+      record(next.accountedAt, end); elapsed += delta;
+      next.elapsedMs += delta; next.accountedAt = end;
+    }
+    return { activity: days, focus: next, elapsed, lastAt };
   }
   function bigThree(tasks, selectedId, today = localDate()) {
     const ordered = rank(tasks, today);
@@ -127,7 +174,7 @@
     }
     return { blocks, unallocated, unused: end - cursor };
   }
-  const engine = Object.freeze({ accrue, waitingDays, score, localDate, eligible, compare, rank, pick, dayDifference, dueLabel, reason, bigThree, plan, formatTime });
+  const engine = Object.freeze({ freshFocus, restoreFocus, focusView, accrue, waitingDays, score, localDate, eligible, compare, rank, pick, dayDifference, dueLabel, reason, bigThree, plan, formatTime });
   root.RescueEngine = engine;
   if (typeof module !== 'undefined' && module.exports) module.exports = engine;
 })(globalThis);

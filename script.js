@@ -10,7 +10,7 @@
   let editingId = null, choosing = false, timerInterval = null, reelInterval = null, pickTimeout = null;
   let toastTimeout = null, pendingConfirmation = null, storageAvailable = true, planShown = false;
   let currentDay = E.localDate();
-  const freshFocus = () => ({ remaining: 300, duration: 300, endAt: null, accountedAt: null, dayMs: {}, countedDays: [] });
+  const freshFocus = E.freshFocus;
   let focus = freshFocus(), lastSavedAt = 0;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -39,14 +39,8 @@
       state = { tasks: saved.tasks.slice(0, 100).map(task => ({ ...task, progressNote: typeof task.progressNote === 'string' ? task.progressNote.slice(0, 300) : '' })), sample: Boolean(saved.sample), selectedId: saved.selectedId || null, selectionExcludedId: saved.selectionExcludedId || null, focus: saved.focus || null, activity: Object.fromEntries(Object.entries(saved.activity || {}).filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && value && Number.isFinite(value.milliseconds) && value.milliseconds >= 0 && Number.isFinite(value.starts) && value.starts >= 0)) };
       const selected = selectedTask();
       if (!selected || selected.doneAt || selected.deferredOn === currentDay || selected.pausedOn === currentDay) { state.selectedId = null; state.focus = null; }
-      if (state.selectedId && state.focus && Number.isFinite(state.focus.remaining) && state.focus.remaining >= 0 && Number.isFinite(state.focus.duration) && state.focus.duration > 0 && state.focus.duration <= 3600) {
-        const savedFocus = state.focus;
-        focus = { ...freshFocus(), remaining: Math.min(savedFocus.remaining, 3600), duration: savedFocus.duration,
-          endAt: Number.isFinite(savedFocus.endAt) ? savedFocus.endAt : null,
-          accountedAt: Number.isFinite(savedFocus.accountedAt) ? savedFocus.accountedAt : savedFocus.endAt ? savedFocus.endAt - savedFocus.remaining * 1000 : null,
-          dayMs: savedFocus.dayMs || {}, countedDays: Array.isArray(savedFocus.countedDays) ? savedFocus.countedDays : [] };
+      if (state.selectedId && state.focus) focus = E.restoreFocus(state.focus);
 
-      }
     } catch (error) {
       storageAvailable = false;
       state = { tasks: samples(), sample: true, selectedId: null, focus: null, activity: {} };
@@ -167,7 +161,7 @@
     const result = E.accrue(state.activity, focus);
     state.activity = result.activity; focus = result.focus;
     const task = selectedTask();
-    if (task && result.elapsed > 0) task.lastWorkedAt = focus.accountedAt;
+    if (task && result.elapsed > 0) task.lastWorkedAt = result.lastAt;
     renderStats();
   }
   function resetFocus() {
@@ -175,37 +169,46 @@
     renderTimer();
   }
   function renderTimer() {
-    const remaining = Math.ceil(focus.endAt ? Math.max(0, (focus.endAt - Date.now()) / 1000) : focus.remaining);
-    const running = Boolean(focus.endAt) && remaining > 0;
-    const finished = remaining === 0;
-    $('timer-display').textContent = `${String(Math.floor(remaining / 60)).padStart(2, '0')}:${String(remaining % 60).padStart(2, '0')}`;
-    $('timer-progress').style.strokeDashoffset = `${552.92 * (1 - Math.min(1, remaining / focus.duration))}`;
-    $('timer-face').classList.toggle('running', running); $('timer-face').classList.toggle('finished', finished);
-    $('timer-state').textContent = finished ? '시작해낸 5분, 수고했어요' : running ? '지금은 이것 하나에만' : remaining < focus.duration ? '잠깐 쉬는 중' : '작은 시작, 충분한 5분';
-    $('timer-button').textContent = running ? '잠깐 멈추기 Ⅱ' : finished ? '5분 더 하기 ▶' : remaining < focus.duration ? '이어서 시작하기 ▶' : '5분 시작하기 ▶';
-    $('focus-mode-time').textContent = $('timer-display').textContent;
+    const view = E.focusView(focus), running = focus.running;
+    const started = view.elapsedMs > 0;
+    const clock = `${String(Math.floor(view.seconds / 60)).padStart(2, '0')}:${String(view.seconds % 60).padStart(2, '0')}`;
+    const total = Math.floor(view.elapsedMs / 1000);
+    const totalText = `총 집중 ${Math.floor(total / 60)}분 ${String(total % 60).padStart(2, '0')}초`;
+    $('timer-display').textContent = clock;
+    $('timer-phase').textContent = view.overtime ? '추가 집중' : '처음 5분';
+    $('timer-progress').style.strokeDashoffset = view.overtime ? '0' : `${552.92 * Math.min(1, view.elapsedMs / (focus.duration * 1000))}`;
+    $('timer-face').classList.toggle('running', running); $('timer-face').classList.toggle('finished', view.overtime);
+    $('timer-face').classList.toggle('long-time', clock.length > 5);
+    $('timer-state').textContent = !running && started ? '잠깐 쉬는 중' : view.overtime ? '5분 시작 성공! 네 페이스로 이어가요.' : running ? '지금은 이것 하나에만' : '작은 시작, 충분한 5분';
+    $('timer-button').textContent = running ? '잠깐 멈추기 Ⅱ' : started ? '이어서 집중하기 ▶' : '5분 시작하기 ▶';
+    $('session-total').textContent = totalText;
+    $('focus-mode-time').textContent = clock;
+    $('focus-mode-time').classList.toggle('long-time', clock.length > 5);
+    $('focus-mode-phase').textContent = $('timer-phase').textContent;
     $('focus-mode-state').textContent = $('timer-state').textContent;
+    $('focus-mode-total').textContent = totalText;
+    $('focus-mode-clock').setAttribute('aria-label', view.overtime ? '추가 집중 시간' : '처음 5분 남은 시간');
     $('focus-mode-toggle').textContent = $('timer-button').textContent;
-    if (selectedTask()) $('pick-button').textContent = running ? '집중 화면 보기 ↗' : finished ? '이 일로 5분 더 하기 ▶' : remaining < focus.duration ? '이 일 이어서 시작하기 ▶' : '▶ 바로 5분 시작';
+    if (selectedTask()) $('pick-button').textContent = running ? '집중 화면 보기 ↗' : started ? '이 일 이어서 시작하기 ▶' : '▶ 바로 5분 시작';
   }
   function tick() {
     accountFocus();
-    if (focus.endAt && focus.remaining <= 0) {
-      focus.endAt = null; clearInterval(timerInterval); timerInterval = null; save();
-      announce('5분이 지났어요. 더 이어가거나 오늘은 여기까지를 눌러요. 일 전체 완료는 따로 선택해요.');
-      toast('5분을 시작해냈어요. 더 이어가도, 오늘은 여기까지 해도 좋아요.');
-    } else if (focus.endAt && Date.now() - lastSavedAt >= 15000) save();
+    if (focus.elapsedMs >= focus.duration * 1000 && !focus.milestoneNotified) {
+      focus.milestoneNotified = true;
+      announce('5분 시작 성공! 이제 네 페이스로 이어가요. 추가 집중 시간을 계속 기록해요.');
+      toast('5분 시작 성공! 이제 네 페이스로 이어가요.');
+      save();
+    } else if (focus.running && Date.now() - lastSavedAt >= 15000) save();
     renderTimer();
   }
   function timerToggle() {
     if (!selectedTask() || choosing) return;
     accountFocus();
-    if (focus.endAt && focus.remaining > 0) {
-      focus.endAt = null; focus.accountedAt = null;
+    if (focus.running) {
+      focus.running = false; focus.accountedAt = null;
       clearInterval(timerInterval); timerInterval = null; announce('타이머를 잠시 멈췄어요.');
     } else {
-      if (focus.remaining <= 0) focus = freshFocus();
-      focus.accountedAt = Date.now(); focus.endAt = focus.accountedAt + focus.remaining * 1000;
+      focus.accountedAt = Date.now(); focus.running = true;
       clearInterval(timerInterval); timerInterval = setInterval(tick, 250);
       announce(`${selectedTask().title}, 타이머를 시작했어요.`);
     }
@@ -214,7 +217,7 @@
   function startFromResult() {
     if (choosing) return;
     if (!selectedTask()) { choose({ autoStart: true }); return; }
-    if (!focus.endAt || focus.endAt <= Date.now()) timerToggle();
+    if (!focus.running) timerToggle();
     openFocusMode();
   }
   function openFocusMode() {
@@ -232,7 +235,7 @@
   function openProgressNote() {
     const task = selectedTask(); if (!task || choosing) return;
     accountFocus();
-    if (focus.endAt) { focus.endAt = null; focus.accountedAt = null; clearInterval(timerInterval); timerInterval = null; }
+    if (focus.running) { focus.running = false; focus.accountedAt = null; clearInterval(timerInterval); timerInterval = null; }
     save(); renderTimer(); pendingNoteId = task.id;
     $('progress-task-title').textContent = task.title;
     $('progress-note').value = '';
@@ -438,6 +441,6 @@
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
   load(); updateDate(); renderTasks(); renderDecision(); renderPlan(); save();
   $('skip-animation').checked = reducedMotion.matches;
-  if (focus.endAt) { tick(); if (focus.endAt) timerInterval = setInterval(tick, 250); }
+  if (focus.running) { tick(); timerInterval = setInterval(tick, 250); }
   setInterval(rollover, 60000);
 })();
