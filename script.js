@@ -149,6 +149,7 @@
     for (const el of document.querySelectorAll('.task-menu button, .restore-task, .undo-task, #add-task, #add-task-bottom, #sample-button, #clear-button')) el.disabled = choosing;
     $('skip-animation').disabled = choosing;
     $('open-effects').disabled = choosing;
+    $('orbit-reroll').disabled = choosing;
     $('complete-button').disabled = choosing || !selected;
     $('timer-button').disabled = choosing || !selected;
     $('pause-today-button').disabled = choosing || !selected;
@@ -287,6 +288,7 @@
       if (stopDispatch) { stopDispatch(); stopDispatch = null; }
       finishPick = null;
       state.selectedId = selection.task.id; choosing = false;
+      if ($('orbit-dialog').open && !orbitPreview) $('orbit-title').textContent = selection.task.title;
       save(); renderTasks(); renderDecision(selection.tied); renderPlan();
       document.querySelector('.decision-panel').scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'start' });
       announce(`지금 할 일은 ${selection.task.title}. ${E.reason(selection.task, candidates, E.localDate(), selection.tied)}${selection.task.progressNote ? ' 지난 메모: ' + selection.task.progressNote : ''}`);
@@ -375,6 +377,7 @@
     $('orbit-announcement').textContent = '';
     $('orbit-title').textContent = winner;
     $('orbit-start').hidden = preview; $('orbit-start').disabled = true;
+    $('orbit-reroll').hidden = preview; $('orbit-reroll').disabled = true;
     $('orbit-replay').hidden = !preview; $('orbit-replay').disabled = true;
     $('orbit-close').textContent = '건너뛰기 ↗';
     $('orbit-purpose').textContent = preview ? 'PREVIEW / 예시 할 일' : 'YOUR NEXT MOVE, CONFIRMED.';
@@ -387,7 +390,7 @@
       onReady() {
         if (!preview && finishPick) finishPick();
         dialog.classList.add('orbit-ready');
-        $('orbit-start').disabled = false; $('orbit-replay').disabled = false;
+        $('orbit-start').disabled = false; $('orbit-replay').disabled = false; $('orbit-reroll').disabled = false;
         $('orbit-close').textContent = preview ? '연출 선택으로 ↙' : '목록으로 ↙';
         $('orbit-announcement').textContent = preview ? `미리 보기 완료. 예시 임무: ${winner}` : `오늘의 임무: ${winner}. 5분 시작 버튼을 눌러 시작하세요.`;
       }
@@ -503,6 +506,15 @@
   $('orbit-dialog').addEventListener('close', endOrbit);
   $('orbit-dialog').addEventListener('cancel', endOrbit);
   $('orbit-replay').addEventListener('click', previewOrbit);
+  $('orbit-reroll').addEventListener('click', () => {
+    const task = selectedTask(); if (!task || choosing || orbitPreview) return;
+    if (!E.eligible(state.tasks.filter(item => item.id !== task.id)).length) {
+      $('orbit-result-note').textContent = '지금 할 수 있는 다른 일이 없어요. 이 임무로 시작해 볼까요?';
+      $('orbit-announcement').textContent = '지금 할 수 있는 다른 일이 없어요. 현재 임무를 유지해요.';
+      return;
+    }
+    choose({ excludeId: task.id });
+  });
   $('orbit-start').addEventListener('click', () => { $('orbit-dialog').close(); endOrbit(); startFromResult(); });
   $('open-effects').addEventListener('click', () => { renderEffects(); $('effects-dialog').showModal(); });
   $('preview-dispatch').addEventListener('click', previewDispatch);
