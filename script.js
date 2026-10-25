@@ -383,8 +383,8 @@
     const dialog = $('orbit-dialog');
     dialog.dataset.theme = theme;
     dialog.querySelector('.orbit-brand small').textContent = {orbit:'ORBITAL DROP / 002',breakout:'BREAK OUT / 003',overdrive:'OVERDRIVE / 004',capsule:'CAPSULE DROP / 005',comic:'COMIC IMPACT / 006'}[theme];
-    dialog.querySelector('.orbit-result-kicker').textContent = {orbit:'✦ MISSION LOCKED',breakout:'✹ 고민을 깨부숴',overdrive:'⚡ CHARGE COMPLETE',capsule:'✦ 오늘의 캡슐 OPEN!',comic:'쾅! 지금은 이거다.'}[theme];
-    dialog.querySelector('.orbit-result-copy').textContent = {orbit:'수많은 할 일 중, 지금은 이것 하나.',breakout:'시작의 벽을 깼어. 이제 한 걸음만.',overdrive:'준비 완료. 이 에너지를 시작으로.',capsule:'캡슐 속 작은 시작을 꺼내 봐요.',comic:'다음 장면은, 너의 작은 시작.'}[theme];
+    dialog.querySelector('.orbit-result-kicker').textContent = {orbit:'✦ MISSION LOCKED',breakout:'✹ 고민을 깨부숴',overdrive:'⚡ CHARGE COMPLETE',capsule:'오늘의 작은 시작',comic:'쾅! 지금은 이거다.'}[theme];
+    dialog.querySelector('.orbit-result-copy').textContent = {orbit:'수많은 할 일 중, 지금은 이것 하나.',breakout:'시작의 벽을 깼어. 이제 한 걸음만.',overdrive:'준비 완료. 이 에너지를 시작으로.',capsule:'고민은 보관하고, 지금은 이것 하나.',comic:'다음 장면은, 너의 작은 시작.'}[theme];
     dialog.classList.remove('orbit-ready'); dialog.dataset.phase = '0';
     $('orbit-announcement').textContent = '';
     $('orbit-title').textContent = winner;
@@ -396,9 +396,9 @@
     $('orbit-result-note').textContent = preview ? effectNames[theme] + ' · 예시 할 일로 체험 중' : '고민은 여기까지. 일단 5분만.';
     document.body.classList.add('orbit-open');
     if (!dialog.open) dialog.showModal();
-    stopOrbit = (impactThemes.includes(theme) ? window.playImpactReveal : window.playOrbitalReveal)({
+    stopOrbit = (theme === 'capsule' ? window.playCapsuleReveal : impactThemes.includes(theme) ? window.playImpactReveal : window.playOrbitalReveal)({
       theme,
-      titles, winner, duration: state.orbitLength === 1000 ? 1000 : 3000,
+      titles, winner, duration: state.orbitLength === 1000 ? 1000 : theme === 'capsule' ? 3500 : 3000,
       sound: state.orbitSound === true, reduced: reducedMotion.matches,
       onReady() {
         if (!preview && finishPick) finishPick();
