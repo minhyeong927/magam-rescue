@@ -72,3 +72,77 @@
     return ()=>{stopped=true;cancelAnimationFrame(raf);observer.disconnect();if(audio&&audio.state!=='closed')audio.close().catch(()=>{});};
   };
 })();
+
+/* A one-click fishing trip. Cosmetic only; task choice belongs to the shared engine. */
+(function(){
+ 'use strict';
+ window.playFishingReveal=function({duration=4000,sound=false,reduced=false,onReady}){
+  const dialog=document.getElementById('orbit-dialog'),canvas=document.getElementById('orbit-canvas'),c=canvas.getContext('2d');
+  const started=performance.now(),fishColors=['#ee9762','#d5b34b','#67a7a0'],catchColor=fishColors[Math.floor(Math.random()*3)];
+  let w=0,h=0,raf=null,stopped=false,ready=false,lastPhase=-1,audio=null;
+  const clamp=x=>Math.max(0,Math.min(1,x)),ease=x=>{x=clamp(x);return x*x*(3-2*x);},mix=(a,b,q)=>a+(b-a)*q;
+  const swimmers=Array.from({length:7},(_,i)=>({a:i*.9+Math.random()*.5,r:.35+Math.random()*.4,color:fishColors[i%3],size:.7+Math.random()*.4}));
+  const drops=Array.from({length:24},(_,i)=>({a:i*Math.PI*2/24,v:.5+Math.random()*.8}));
+  if(sound&&!reduced){try{audio=new(window.AudioContext||window.webkitAudioContext)();audio.resume().catch(()=>{});}catch(_){}}
+  function plop(freq,len=.12,vol=.045){if(!audio)return;try{const o=audio.createOscillator(),g=audio.createGain(),at=audio.currentTime;o.type='sine';o.frequency.setValueAtTime(freq,at);o.frequency.exponentialRampToValueAtTime(65,at+len);g.gain.setValueAtTime(vol,at);g.gain.exponentialRampToValueAtTime(.001,at+len);o.connect(g);g.connect(audio.destination);o.start();o.stop(at+len+.01);}catch(_){}}
+  function ellipse(x,y,rx,ry,fill,stroke='#345646',lw=2){c.beginPath();c.ellipse(x,y,Math.max(.1,rx),Math.max(.1,ry),0,0,Math.PI*2);if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=lw;c.stroke();}}
+  function path(points,fill,stroke='#345646',lw=3){c.beginPath();points.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();if(fill){c.fillStyle=fill;c.fill();}if(stroke){c.strokeStyle=stroke;c.lineWidth=lw;c.stroke();}}
+  function fish(x,y,size,rotation,color,shadow=false){
+   c.save();c.translate(x,y);c.rotate(rotation);c.scale(size,size);
+   if(shadow){ellipse(0,6,27,9,'#3c6b7830',null);c.restore();return;}
+   c.lineJoin='round';
+   path([[-25,0],[-48,-19],[-43,5],[-47,23],[-22,10]],color,'#365b55',2.8);
+   path([[-8,-16],[0,-30],[14,-19],[22,-13]],'#b5cab4','#365b55',2.5);
+   const g=c.createLinearGradient(0,-22,0,24);g.addColorStop(0,color);g.addColorStop(.6,color);g.addColorStop(.62,'#fff4d7');g.addColorStop(1,'#ddd8b7');
+   ellipse(0,0,34,23,g,'#365b55',3);
+   path([[-1,6],[8,20],[-10,14]],'#d09c64','#6d795c',1.5);
+   c.beginPath();c.arc(15,0,10,-1.2,1.2);c.strokeStyle='#6a8064';c.lineWidth=1.5;c.stroke();
+   ellipse(20,-6,6,7,'#fffdf0','#365b55',1.8);ellipse(22,-6,2,3,'#263e38',null);
+   c.beginPath();c.moveTo(31,4);c.lineTo(38,1);c.strokeStyle='#365b55';c.lineWidth=2;c.stroke();
+   c.beginPath();c.moveTo(-15,-12);c.quadraticCurveTo(-5,-17,4,-14);c.strokeStyle='#fffce8aa';c.lineWidth=3;c.stroke();c.restore();
+  }
+  function tree(x,y,scale){c.save();c.translate(x,y);c.scale(scale,scale);ellipse(5,13,39,9,'#3b5e3720',null);path([[-9,7],[-4,-48],[8,-46],[13,9]],'#977451','#405438',3);[[-24,-56,25],[-5,-76,28],[22,-61,26],[0,-48,29]].forEach(([x,y,r],i)=>ellipse(x,y,r,r*.9,['#8cad60','#a6bb65','#809e53','#a4b865'][i],'#405438',3));c.restore();}
+  function draw(now){
+   if(stopped||!c)return;
+   const t=reduced?1:clamp((now-started)/duration),stage=t<.26?0:t<.61?1:t<.87?2:3;
+   if(stage!==lastPhase){lastPhase=stage;dialog.dataset.phase=String(stage);document.getElementById('orbit-phase').textContent=['오늘 할 일, 하나 낚으러 가요','까딱, 까딱… 입질이 왔어요','지금이다! 힘껏 낚아 올려요','오늘의 월척!'][stage];if(stage===1)plop(430);if(stage===2)plop(760,.23,.07);if(stage===3)plop(520,.25,.045);}
+   document.getElementById('orbit-coordinates').textContent='고민 낚시터 / '+String(Math.floor(t*100)).padStart(3,'0');
+   c.clearRect(0,0,w,h);const wide=w>=800,unit=Math.min(w/460,h/760),cx=w*.5,cy=h*.5,rx=Math.min(w*.46,510),ry=Math.min(h*.22,190);
+   const sky=c.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#a8d5e3');sky.addColorStop(.38,'#e7efdc');sky.addColorStop(.39,'#e4dfbb');sky.addColorStop(1,'#f1ead2');c.fillStyle=sky;c.fillRect(0,0,w,h);
+   // Puffy, cut-paper clouds and an uneven shoreline give the scene its old game character.
+   [[w*.15,h*.19,38],[w*.75,h*.16,45]].forEach(([x,y,r])=>{ellipse(x,y,r*unit,r*.25*unit,'#fff9e8',null);ellipse(x-r*.25*unit,y-r*.15*unit,r*.46*unit,r*.30*unit,'#fff9e8',null);});
+   c.fillStyle='#b3bd7b';c.beginPath();c.moveTo(0,h*.36);c.quadraticCurveTo(w*.25,h*.23,w*.48,h*.36);c.quadraticCurveTo(w*.78,h*.24,w,h*.36);c.lineTo(w,h*.42);c.lineTo(0,h*.42);c.fill();
+   tree(cx-rx*.78,cy-ry*.77,.77*unit);tree(cx+rx*.75,cy-ry*.92,1.02*unit);
+   ellipse(cx,cy+12*unit,rx+8*unit,ry+10*unit,'#a29b71','#5b7053',4*unit);
+   const water=c.createLinearGradient(0,cy-ry,0,cy+ry);water.addColorStop(0,'#76aba8');water.addColorStop(.45,'#a9ced0');water.addColorStop(1,'#bddad0');
+   ellipse(cx,cy,rx,ry,water,'#597c67',4*unit);ellipse(cx,cy-3*unit,rx-8*unit,ry-7*unit,null,'#e1e9cc',2*unit);
+   c.save();c.beginPath();c.ellipse(cx,cy,rx-10*unit,ry-7*unit,0,0,Math.PI*2);c.clip();
+   for(let i=0;i<6;i++){const yy=cy-ry*.67+i*ry*.27;c.beginPath();c.moveTo(cx-rx*.7,yy);c.bezierCurveTo(cx-rx*.25,yy-5*unit,cx+rx*.25,yy+5*unit,cx+rx*.7,yy);c.strokeStyle='#e5f1da55';c.lineWidth=2*unit;c.stroke();}
+   swimmers.forEach((f,i)=>{const a=f.a+t*(i%2?1:-1)*1.9,fx=cx+Math.cos(a)*rx*f.r,fy=cy+Math.sin(a)*ry*f.r;fish(fx+5,fy+10,.48*unit*f.size,Math.sin(a)*.5,f.color,true);c.save();c.globalAlpha=.6;fish(fx,fy,.48*unit*f.size,Math.sin(a)*.5+(i%2?Math.PI:0),f.color);c.restore();});
+   c.restore();
+   // Reeds lean at different angles instead of repeating in a straight border.
+   [-.88,-.61,.65,.88].forEach((x,i)=>{const gx=cx+rx*x,gy=cy+ry*Math.sqrt(1-x*x)+13*unit;c.strokeStyle='#617c47';c.lineWidth=4*unit;for(let j=0;j<3;j++){c.beginPath();c.moveTo(gx,gy);c.quadraticCurveTo(gx+(j-1)*9*unit,gy-16*unit,gx+(j-1)*12*unit,gy-(22+j%2*8)*unit);c.stroke();}});
+   const cast=ease(t/.24),lift=ease((t-.61)/.23),bobX=mix(w*.84,cx,cast),bobY=mix(h*.3,cy,cast)-Math.sin(cast*Math.PI)*h*.20;
+   const strike=t>.49&&t<.62?Math.sin((t-.49)*100)*7*unit:0;
+   const finalFishY=wide?h*.31:Math.max(155,h*.27),hookY=mix(bobY+strike,finalFishY,lift);
+   const handX=w*.92,handY=h*.51,tipX=mix(w*.70,w*.63,lift),tipY=mix(h*.17,h*.10,lift);
+   // Bent bamboo rod, wound handle, reel and a curved line stay connected during the catch.
+   c.save();c.lineCap='round';c.beginPath();c.moveTo(handX,handY);c.quadraticCurveTo(w*.72,h*.23+lift*h*.13,tipX,tipY);c.strokeStyle='#36584b';c.lineWidth=9*unit;c.stroke();c.strokeStyle='#b08e4e';c.lineWidth=5*unit;c.stroke();
+   c.beginPath();c.moveTo(handX,handY);c.lineTo(handX-18*unit,handY-43*unit);c.strokeStyle='#70543a';c.lineWidth=14*unit;c.stroke();ellipse(handX-16*unit,handY-16*unit,10*unit,11*unit,'#d4bc7d','#36584b',2*unit);
+   c.beginPath();c.moveTo(tipX,tipY);c.quadraticCurveTo(mix(tipX,bobX,.6),tipY+(hookY-tipY)*.45,bobX,hookY);c.strokeStyle='#f7f0d7';c.lineWidth=1.5*unit;c.stroke();c.restore();
+   if(t>.21&&t<.69){const q=clamp((t-.21)/.16);c.save();c.globalAlpha=1-q*.7;ellipse(cx,cy,8*unit+q*40*unit,(3+q*10)*unit,null,'#f1f4d4',2*unit);c.restore();}
+   if(t<.65){c.save();c.translate(bobX,bobY+strike);c.rotate(t>.4?Math.sin(t*85)*.18:-.15);if(t>.55)c.globalAlpha=1-clamp((t-.55)/.1);c.strokeStyle='#465c42';c.lineWidth=2*unit;c.beginPath();c.moveTo(0,-24*unit);c.lineTo(0,7*unit);c.stroke();ellipse(0,-5*unit,6*unit,14*unit,'#f6e9c3','#465c42',2*unit);c.fillStyle='#cf6147';c.beginPath();c.ellipse(0,-9*unit,5*unit,9*unit,0,Math.PI,Math.PI*2);c.fill();c.restore();}
+   if(t>.61){const q=clamp((t-.61)/.25);c.save();c.globalAlpha=1-q;drops.forEach(p=>{const dx=Math.cos(p.a)*q*100*unit*p.v,dy=Math.sin(p.a)*q*65*unit*p.v+q*q*85*unit;ellipse(cx+dx,cy+dy,3*unit,6*unit,'#e9f4dc',null);});c.restore();
+    const s=(.45+lift*.65)*unit,wiggle=(1-lift)*Math.sin(t*110)*.25;fish(cx,hookY+28*unit,s,-.40+wiggle,catchColor);
+    if(t>.76){c.save();c.translate(cx,hookY-44*unit);c.rotate(-.08);c.font=`900 ${Math.max(23,32*unit)}px system-ui,sans-serif`;c.textAlign='center';c.lineWidth=6*unit;c.strokeStyle='#fff5d8';c.strokeText('낚았다!',0,0);c.fillStyle='#b35036';c.fillText('낚았다!',0,0);c.restore();}
+   }
+   // A short kick at the strike, not a constant screen shake.
+   canvas.style.transform=t>.61&&t<.67?`translate(${Math.sin(t*400)*3}px,${Math.cos(t*330)*2}px)`:'none';
+   if(t>=1&&!ready){ready=true;onReady();}
+   if(!ready)raf=requestAnimationFrame(draw);
+  }
+  function resize(){w=canvas.clientWidth;h=canvas.clientHeight;const d=Math.min(devicePixelRatio||1,2);canvas.width=w*d;canvas.height=h*d;c.setTransform(d,0,0,d,0,0);if(ready&&!stopped)draw(started+duration);}
+  resize();const observer=new ResizeObserver(resize);observer.observe(canvas);draw(performance.now());
+  return()=>{stopped=true;cancelAnimationFrame(raf);observer.disconnect();canvas.style.removeProperty('transform');if(audio&&audio.state!=='closed')audio.close().catch(()=>{});};
+ };
+})();
