@@ -19,7 +19,9 @@
   const mix=(a,b,q)=>a+(b-a)*q;
   function use(id){const e=document.createElementNS(NS,'use');e.setAttribute('href','#'+id);return e;}
   function makeCap(color){const g=document.createElementNS(NS,'g'),b=use('cap-bottom'),t=use('cap-top-'+color);g.append(b,t);return{g,b,t};}
-  const balls=Array.from({length:23},(_,i)=>{const item=makeCap(['red','yellow','teal'][i%3]);caps.append(item.g);return{...item,angle:Math.random()*Math.PI*2,rad:45+Math.random()*50,x:202+(i%5)*43+(Math.random()-.5)*12,y:391-Math.floor(i/5)*36,scale:.72+Math.random()*.22};});
+  // Gravity-packed, uneven pile with independent seams and front/back scale.
+  const pile=[[219.1, 177.4, 0.902, 223], [327.4, 195.4, 0.779, 69], [263.1, 197.2, 0.832, 294], [379.8, 210.2, 0.902, 187], [201.3, 218.1, 0.743, 184], [296.4, 228.6, 0.867, 321], [341.8, 234.9, 0.779, 60], [246.0, 240.1, 0.841, 257], [201.0, 258.7, 0.764, 346], [381.8, 262.7, 0.893, 114], [283.7, 273.4, 0.857, 275], [338.9, 276.9, 0.784, 19], [236.4, 285.8, 0.889, 114], [307.2, 313.5, 0.868, 322], [362.9, 314.4, 0.868, 2], [261.4, 325.0, 0.836, 137], [206.6, 328.8, 0.826, 75], [333.2, 348.6, 0.751, 77], [380.0, 359.0, 0.901, 219], [236.1, 360.5, 0.779, 9], [295.5, 364.0, 0.748, 185], [344.3, 391.4, 0.889, 151], [264.6, 393.3, 0.83, 160], [206.9, 393.5, 0.824, 115]];
+  const balls=pile.map(([x,y,scale,tilt],i)=>{const item=makeCap(['red','yellow','teal'][Math.floor(Math.random()*3)]);caps.append(item.g);return{...item,angle:Math.random()*Math.PI*2,x:x+(Math.random()-.5)*3,y:y+(Math.random()-.5)*2,scale,tilt:tilt+(Math.random()-.5)*45,drift:(Math.random()-.5)*8,turn:(Math.random()-.5)*100,depth:(419-y)/190};});
   const selected=makeCap(color);dispensed.append(selected.g);
   const hero=makeCap(color);prize.querySelector('.prize-shells').append(hero.g);
   // The actual result sheet is the paper from the capsule, not a second result card.
@@ -41,13 +43,13 @@
    const tableTurn=ease((t-.07)/.46)*Math.PI*4;
    paddle.setAttribute('transform',`translate(294 410) scale(1 .075) rotate(${tableTurn*180/Math.PI}) scale(1 13.3333) translate(-294 -410)`);
    balls.forEach((b,i)=>{
-    const row=Math.floor(i/5),delay=row*.017,local=clamp((t-.065-delay)/(.49+row*.012));
+    const row=b.depth*4,delay=row*.017,local=clamp((t-.065-delay)/(.49+row*.012)),rest=ease((local-.55)/.45);
     const drive=Math.sin(Math.PI*clamp(local/.78)),tail=clamp((local-.70)/.30);
     const settle=Math.sin(tail*Math.PI*3)*(1-tail)*2.5;
     const phase=local*Math.PI*5+b.angle;
     const push=Math.sin(phase)*drive*(13-row*1.3);
-    const x=b.x+push,y=b.y-Math.abs(Math.sin(phase*1.14))*drive*(9+row*1.8)-Math.abs(settle);
-    const angle=Math.sin(phase)*drive*24+settle*2;
+    const x=b.x+push+b.drift*rest,y=b.y-Math.abs(Math.sin(phase*1.14))*drive*(9+row*1.8)-Math.abs(settle)+Math.sin(b.angle)*2*rest;
+    const angle=b.tilt+Math.sin(phase)*drive*(32+Math.abs(b.turn)*.4)+settle*2+b.turn*rest;
     b.g.setAttribute('transform',`translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${angle.toFixed(2)}) scale(${b.scale})`);
     b.g.style.opacity=String(.72+b.scale*.22);
    });
