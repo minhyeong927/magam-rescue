@@ -8,6 +8,7 @@
   let state = { tasks: [], sample: true, selectedId: null, focus: null, activity: {} };
   let pendingNoteId = null;
   let stopDispatch = null, stopPreview = null, finishPick = null;
+  let stopOrbit = null, orbitPreview = false;
   let editingId = null, choosing = false, timerInterval = null, reelInterval = null, pickTimeout = null;
   let toastTimeout = null, pendingConfirmation = null, storageAvailable = true, planShown = false;
   let currentDay = E.localDate();
@@ -37,7 +38,7 @@
       if (!raw) { state.tasks = samples(); return; }
       const saved = JSON.parse(raw);
       if (!Array.isArray(saved.tasks) || !saved.tasks.every(isTask)) throw new Error('invalid saved tasks');
-      state = { effect: saved.effect === 'dispatch' ? 'dispatch' : 'basic', tasks: saved.tasks.slice(0, 100).map(task => ({ ...task, progressNote: typeof task.progressNote === 'string' ? task.progressNote.slice(0, 300) : '' })), sample: Boolean(saved.sample), selectedId: saved.selectedId || null, selectionExcludedId: saved.selectionExcludedId || null, focus: saved.focus || null, activity: Object.fromEntries(Object.entries(saved.activity || {}).filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && value && Number.isFinite(value.milliseconds) && value.milliseconds >= 0 && Number.isFinite(value.starts) && value.starts >= 0)) };
+      state = { effect: ['dispatch', 'orbit'].includes(saved.effect) ? saved.effect : 'basic', orbitLength: saved.orbitLength === 1000 ? 1000 : 3000, orbitSound: saved.orbitSound === true, tasks: saved.tasks.slice(0, 100).map(task => ({ ...task, progressNote: typeof task.progressNote === 'string' ? task.progressNote.slice(0, 300) : '' })), sample: Boolean(saved.sample), selectedId: saved.selectedId || null, selectionExcludedId: saved.selectionExcludedId || null, focus: saved.focus || null, activity: Object.fromEntries(Object.entries(saved.activity || {}).filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && value && Number.isFinite(value.milliseconds) && value.milliseconds >= 0 && Number.isFinite(value.starts) && value.starts >= 0)) };
       const selected = selectedTask();
       if (!selected || selected.doneAt || selected.deferredOn === currentDay || selected.pausedOn === currentDay) { state.selectedId = null; state.focus = null; }
       if (state.selectedId && state.focus) focus = E.restoreFocus(state.focus);
@@ -273,6 +274,7 @@
     }
     const skip = autoStart || $('skip-animation').checked || reducedMotion.matches;
     const dispatch = state.effect === 'dispatch' && !skip;
+    const orbit = state.effect === 'orbit' && !skip;
     let finished = false;
     finishPick = () => {
       if (finished) return; finished = true;
@@ -287,14 +289,17 @@
       if (autoStart) startFromResult();
     };
     $('skip-current-effect').hidden = skip;
-    if (dispatch) {
+    if (orbit) {
+      $('reel').hidden = true;
+      openOrbit(pool.map(task => task.title), selection.task.title, false);
+    } else if (dispatch) {
       $('reel').hidden = true; $('dispatch-stage').hidden = false;
       stopDispatch = playDispatch($('dispatch-stage'), pool.map(task => task.title), selection.task.title);
     } else {
       showReel();
       if (!skip) reelInterval = setInterval(showReel, 110);
     }
-    pickTimeout = setTimeout(finishPick, skip ? 0 : dispatch ? 2350 : 1650);
+    if (!orbit) pickTimeout = setTimeout(finishPick, skip ? 0 : dispatch ? 2350 : 1650);
   }
   // Both previews and real selections use the same visual; only choose() changes tasks.
   function playDispatch(stage, titles, winner, onFinish = () => {}) {
@@ -322,11 +327,13 @@
     return () => { clearInterval(cycle); clearTimeout(land); clearTimeout(confirm); clearTimeout(end); };
   }
   function renderEffects() {
-    const effect = state.effect === 'dispatch' ? 'dispatch' : 'basic';
-    $('effect-current').textContent = effect === 'dispatch' ? '구조대 출동' : '기본 룰렛';
+    const effect = ['dispatch', 'orbit'].includes(state.effect) ? state.effect : 'basic';
+    $('effect-current').textContent = { basic: '기본 룰렛', dispatch: '구조대 출동', orbit: '궤도 강하' }[effect];
+    $('orbit-length').value = String(state.orbitLength === 1000 ? 1000 : 3000);
+    $('orbit-sound').checked = state.orbitSound === true;
     document.querySelectorAll('.effect-apply').forEach(button => {
       const active = button.dataset.effect === effect;
-      button.disabled = active; button.textContent = active ? '사용 중 ✓' : button.dataset.effect === 'dispatch' ? '체험 적용' : '적용하기';
+      button.disabled = active; button.textContent = active ? '사용 중 ✓' : button.dataset.effect !== 'basic' ? '체험 적용' : '적용하기';
       button.closest('.effect-card').classList.toggle('effect-selected', active);
     });
   }
@@ -346,6 +353,42 @@
       $('preview-dispatch').disabled = false;
     });
     $('effect-preview').scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'nearest' });
+  }
+
+  function openOrbit(titles, winner, preview) {
+    if (stopOrbit) stopOrbit();
+    orbitPreview = preview;
+    const dialog = $('orbit-dialog');
+    dialog.classList.remove('orbit-ready'); dialog.dataset.phase = '0';
+    $('orbit-announcement').textContent = '';
+    $('orbit-title').textContent = winner;
+    $('orbit-start').hidden = preview; $('orbit-start').disabled = true;
+    $('orbit-replay').hidden = !preview; $('orbit-replay').disabled = true;
+    $('orbit-close').textContent = '건너뛰기 ↗';
+    $('orbit-purpose').textContent = preview ? 'PREVIEW / 예시 할 일' : 'YOUR NEXT MOVE, CONFIRMED.';
+    $('orbit-result-note').textContent = preview ? '유료 연출 02 · 무료 체험 미리 보기' : '고민은 여기까지. 일단 5분만.';
+    document.body.classList.add('orbit-open');
+    if (!dialog.open) dialog.showModal();
+    stopOrbit = window.playOrbitalReveal({
+      titles, winner, duration: state.orbitLength === 1000 ? 1000 : 3000,
+      sound: state.orbitSound === true, reduced: reducedMotion.matches,
+      onReady() {
+        if (!preview && finishPick) finishPick();
+        dialog.classList.add('orbit-ready');
+        $('orbit-start').disabled = false; $('orbit-replay').disabled = false;
+        $('orbit-close').textContent = preview ? '연출 선택으로 ↙' : '목록으로 ↙';
+        $('orbit-announcement').textContent = preview ? `미리 보기 완료. 예시 임무: ${winner}` : `오늘의 임무: ${winner}. 5분 시작 버튼을 눌러 시작하세요.`;
+      }
+    });
+  }
+  function endOrbit() {
+    if (stopOrbit) { stopOrbit(); stopOrbit = null; }
+    if (!orbitPreview && finishPick) finishPick();
+    document.body.classList.remove('orbit-open');
+  }
+  function previewOrbit() {
+    closePreview();
+    openOrbit(['발표 자료 첫 장 만들기', '영어 단어 복습하기', '책상 위 정리하기', 'AI 활용 공부하기'], '발표 자료 첫 장 만들기', true);
   }
 
   function openTask(id) {
@@ -441,13 +484,21 @@
   }
   function updateDate() { $('today-label').textContent = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date()); $('today-label').dateTime = E.localDate(); }
 
+  $('preview-orbit').addEventListener('click', previewOrbit);
+  $('orbit-length').addEventListener('change', () => { state.orbitLength = Number($('orbit-length').value); save(); });
+  $('orbit-sound').addEventListener('change', () => { state.orbitSound = $('orbit-sound').checked; save(); });
+  $('orbit-close').addEventListener('click', () => $('orbit-dialog').close());
+  $('orbit-dialog').addEventListener('close', endOrbit);
+  $('orbit-dialog').addEventListener('cancel', endOrbit);
+  $('orbit-replay').addEventListener('click', previewOrbit);
+  $('orbit-start').addEventListener('click', () => { $('orbit-dialog').close(); endOrbit(); startFromResult(); });
   $('open-effects').addEventListener('click', () => { renderEffects(); $('effects-dialog').showModal(); });
   $('preview-dispatch').addEventListener('click', previewDispatch);
   $('close-effect-preview').addEventListener('click', closePreview);
   $('effects-dialog').addEventListener('close', closePreview);
   document.querySelectorAll('.effect-apply').forEach(button => button.addEventListener('click', () => {
     state.effect = button.dataset.effect; save(); renderEffects(); $('effects-dialog').close();
-    toast(state.effect === 'dispatch' ? '구조대 출동 연출을 체험 적용했어요.' : '기본 룰렛을 적용했어요.');
+    toast(state.effect === 'orbit' ? '궤도 강하 연출을 체험 적용했어요.' : state.effect === 'dispatch' ? '구조대 출동 연출을 체험 적용했어요.' : '기본 룰렛을 적용했어요.');
   }));
   $('skip-current-effect').addEventListener('click', () => { if (finishPick) finishPick(); });
   $('add-task').addEventListener('click', () => openTask());
