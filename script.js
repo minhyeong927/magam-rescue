@@ -9,8 +9,8 @@
   let pendingNoteId = null;
   let stopDispatch = null, stopPreview = null, finishPick = null;
   let stopOrbit = null, orbitPreview = false, previewTheme = 'orbit';
-  const impactThemes = ['breakout', 'overdrive', 'capsule', 'comic', 'fishing'];
-  const effectNames = {basic:'기본 룰렛', dispatch:'구조대 출동', orbit:'궤도 강하', breakout:'고민을 깨부숴', overdrive:'오버드라이브', capsule:'캡슐 드롭', comic:'코믹 임팩트', fishing:'오늘의 월척'};
+  const impactThemes = ['breakout', 'overdrive', 'capsule', 'comic', 'fishing', 'slot'];
+  const effectNames = {basic:'기본 룰렛', dispatch:'구조대 출동', orbit:'궤도 강하', breakout:'고민을 깨부숴', overdrive:'오버드라이브', capsule:'캡슐 드롭', comic:'코믹 임팩트', fishing:'오늘의 월척', slot:'잭팟 슬롯'};
   let editingId = null, choosing = false, timerInterval = null, reelInterval = null, pickTimeout = null;
   let toastTimeout = null, pendingConfirmation = null, storageAvailable = true, planShown = false;
   let currentDay = E.localDate();
@@ -369,7 +369,7 @@
     if (impactThemes.includes(state.effect)) {
       $('focus-dialog').querySelector('.focus-mode-header .eyebrow').textContent = '✳ MAGAM RESCUE / FOCUS';
       $('focus-mode-kicker').textContent = effectNames[state.effect];
-      $('focus-mode-title').textContent = {breakout:'시작의 벽을 넘어서',overdrive:'집중 에너지 충전 중',capsule:'오늘의 작은 한 걸음',comic:'지금, 나의 장면',fishing:'지금은 잔잔하게, 이것 하나'}[state.effect];
+      $('focus-mode-title').textContent = {breakout:'시작의 벽을 넘어서',overdrive:'집중 에너지 충전 중',capsule:'오늘의 작은 한 걸음',comic:'지금, 나의 장면',fishing:'지금은 잔잔하게, 이것 하나',slot:'오늘은 한 가지에만'}[state.effect];
     }
   }
   function closePreview() {
@@ -396,9 +396,9 @@
     const dialog = $('orbit-dialog');
     dialog.dataset.theme = theme;
     dialog.querySelector('.orbit-telemetry>span:first-child').textContent = theme === 'fishing' ? '고민 낚시터 · 영업 중' : 'MISSION CONTROL / ONLINE';
-    dialog.querySelector('.orbit-brand small').textContent = {orbit:'ORBITAL DROP / 002',breakout:'BREAK OUT / 003',overdrive:'OVERDRIVE / 004',capsule:'CAPSULE DROP / 005',comic:'COMIC IMPACT / 006',fishing:'ONE GOOD CATCH / 007'}[theme];
-    dialog.querySelector('.orbit-result-kicker').textContent = {orbit:'✦ MISSION LOCKED',breakout:'✹ 고민을 깨부숴',overdrive:'⚡ CHARGE COMPLETE',capsule:'오늘의 작은 시작',comic:'쾅! 지금은 이거다.',fishing:'오늘의 월척'}[theme];
-    dialog.querySelector('.orbit-result-copy').textContent = {orbit:'수많은 할 일 중, 지금은 이것 하나.',breakout:'시작의 벽을 깼어. 이제 한 걸음만.',overdrive:'준비 완료. 이 에너지를 시작으로.',capsule:'고민은 보관하고, 지금은 이것 하나.',comic:'다음 장면은, 너의 작은 시작.',fishing:'고민은 놓아주고, 이 일부터 시작해요.'}[theme];
+    dialog.querySelector('.orbit-brand small').textContent = {orbit:'ORBITAL DROP / 002',breakout:'BREAK OUT / 003',overdrive:'OVERDRIVE / 004',capsule:'CAPSULE DROP / 005',comic:'COMIC IMPACT / 006',fishing:'ONE GOOD CATCH / 007',slot:'JACKPOT SLOT / 008'}[theme];
+    dialog.querySelector('.orbit-result-kicker').textContent = {orbit:'✦ MISSION LOCKED',breakout:'✹ 고민을 깨부숴',overdrive:'⚡ CHARGE COMPLETE',capsule:'오늘의 작은 시작',comic:'쾅! 지금은 이거다.',fishing:'오늘의 월척',slot:'당첨, 오늘의 한 가지'}[theme];
+    dialog.querySelector('.orbit-result-copy').textContent = {orbit:'수많은 할 일 중, 지금은 이것 하나.',breakout:'시작의 벽을 깼어. 이제 한 걸음만.',overdrive:'준비 완료. 이 에너지를 시작으로.',capsule:'고민은 보관하고, 지금은 이것 하나.',comic:'다음 장면은, 너의 작은 시작.',fishing:'고민은 놓아주고, 이 일부터 시작해요.',slot:'세 칸이 맞았어요. 지금은 이것 하나.'}[theme];
     dialog.classList.remove('orbit-ready'); dialog.dataset.phase = '0';
     $('orbit-announcement').textContent = '';
     $('orbit-title').textContent = winner;
@@ -411,9 +411,9 @@
     $('orbit-result-note').textContent = preview ? effectNames[theme] + ' · 예시 할 일로 체험 중' : '고민은 여기까지. 일단 5분만.';
     document.body.classList.add('orbit-open');
     if (!dialog.open) dialog.showModal();
-    stopOrbit = (theme === 'fishing' ? window.playFishingReveal : theme === 'capsule' ? window.playCapsuleReveal : impactThemes.includes(theme) ? window.playImpactReveal : window.playOrbitalReveal)({
+    stopOrbit = (theme === 'fishing' ? window.playFishingReveal : theme === 'slot' ? window.playSlotReveal : theme === 'capsule' ? window.playCapsuleReveal : impactThemes.includes(theme) ? window.playImpactReveal : window.playOrbitalReveal)({
       theme,
-      titles, winner, duration: state.orbitLength === 1000 ? 1000 : theme === 'fishing' ? 4000 : theme === 'capsule' ? 3500 : 3000,
+      titles, winner, duration: state.orbitLength === 1000 ? 1000 : theme === 'fishing' ? 4000 : (theme === 'capsule' || theme === 'slot') ? 3500 : 3000,
       sound: state.orbitSound === true, reduced: reducedMotion.matches,
       onReady() {
         if (!preview && finishPick) finishPick();
