@@ -9,7 +9,7 @@
   const SERIF = '"Noto Serif KR","AppleMyungjo","Batang",Georgia,serif';
   // 기계 하나의 설계 좌표: 캐비닛 중심이 x=0, 오른쪽 레버까지 포함해 가로 -290~350.
   const MW = 640, MH = 610, MID = 30;
-  const N = 7;           // 릴 한 바퀴의 그림 수
+  const N = 6;           // 릴 한 바퀴의 그림 수
   const CELL = 110;      // 그림 하나의 높이
   const REEL_Y = 342;    // 당첨선 높이
   const TS = .12, STOPS = [.44, .56, .68];
@@ -28,63 +28,84 @@
   const brass = (c, x0, y0, x1, y1) => lin(c, x0, y0, x1, y1, [[0, '#6a4917'], [.22, '#d8b25e'], [.42, '#f6e2a3'], [.62, '#a57b33'], [1, '#664616']]);
   const chrome = (c, x0, y0, x1, y1) => lin(c, x0, y0, x1, y1, [[0, '#5b5b58'], [.2, '#f3f1ea'], [.45, '#9c9a93'], [.7, '#fbfaf4'], [1, '#62615c']]);
 
-  /* ---------- 릴 그림 (직접 그린 오리지널 도안) ---------- */
-  function drawSymbol(c, i) {
-    c.lineJoin = 'round'; c.lineCap = 'round';
-    if (i === 0) { // 마감구조대 별: 당첨 그림
-      for (let k = 0; k < 8; k++) {
-        const a = k * Math.PI / 4; c.save(); c.rotate(a);
-        c.strokeStyle = '#7d1320'; c.lineWidth = 25; c.beginPath(); c.moveTo(0, -8); c.lineTo(0, -76); c.stroke();
-        c.strokeStyle = '#c7303c'; c.lineWidth = 15; c.beginPath(); c.moveTo(0, -10); c.lineTo(0, -70); c.stroke();
-        c.strokeStyle = '#ee7a6e'; c.lineWidth = 4; c.beginPath(); c.moveTo(-3, -18); c.lineTo(-3, -62); c.stroke(); c.restore();
-      }
-      c.fillStyle = brass(c, -22, -22, 22, 22); c.beginPath(); c.arc(0, 0, 20, 0, TAU); c.fill();
-      c.strokeStyle = '#4a300c'; c.lineWidth = 4; c.stroke();
-      c.fillStyle = '#7d1320'; c.beginPath(); c.arc(0, 0, 8, 0, TAU); c.fill();
-    } else if (i === 1) { // 종
+  /* ---------- 릴 그림 (직접 그린 오리지널 도안): 체리·레몬·포도·수박·종·7 ---------- */
+  const OUT = '#2b1410';
+  function outline(c, w, col) { c.strokeStyle = col || OUT; c.lineWidth = w; c.stroke(); }
+  function leaf(c, x, y, rx, ry, rot) {
+    c.fillStyle = lin(c, x - rx, y, x + rx, y, [[0, '#2f7a3b'], [1, '#5aa854']]); c.beginPath(); c.ellipse(x, y, rx, ry, rot, 0, TAU); c.fill(); outline(c, 3.5, '#1c4a26');
+    c.strokeStyle = '#1c4a2688'; c.lineWidth = 2; c.beginPath(); c.moveTo(x - rx * Math.cos(rot) * .8, y - rx * Math.sin(rot) * .8); c.lineTo(x + rx * Math.cos(rot) * .8, y + rx * Math.sin(rot) * .8); c.stroke();
+  }
+  const SEVEN = 5;
+  const SYMBOLS = [
+    c => { // 체리
+      c.strokeStyle = '#2f6a3a'; c.lineWidth = 6; c.beginPath(); c.moveTo(-26, 22); c.quadraticCurveTo(-18, -34, 8, -56); c.moveTo(30, 30); c.quadraticCurveTo(24, -26, 8, -56); c.stroke();
+      leaf(c, 30, -52, 26, 11, -.35);
+      [[-28, 36, 28], [30, 42, 27]].forEach(([x, y, r]) => {
+        c.fillStyle = rad(c, x - 9, y - 10, 2, r + 4, [[0, '#f2766a'], [.5, '#c0262e'], [1, '#6d0e18']]); c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
+        outline(c, 4, '#4b0911'); c.fillStyle = '#fff3'; c.beginPath(); c.ellipse(x - 9, y - 11, 6, 9, .5, 0, TAU); c.fill();
+      });
+    },
+    c => { // 레몬
+      c.save(); c.rotate(-.4);
+      c.beginPath(); c.moveTo(-74, 0); c.quadraticCurveTo(-68, -10, -58, -22); c.bezierCurveTo(-34, -54, 34, -54, 58, -22); c.quadraticCurveTo(68, -10, 74, 0);
+      c.quadraticCurveTo(68, 10, 58, 22); c.bezierCurveTo(34, 54, -34, 54, -58, 22); c.quadraticCurveTo(-68, 10, -74, 0); c.closePath();
+      c.fillStyle = rad(c, -14, -18, 4, 84, [[0, '#fff6a8'], [.45, '#f4c931'], [1, '#b6830f']]); c.fill(); outline(c, 5.5, '#4e3706');
+      c.fillStyle = '#fff9'; c.beginPath(); c.ellipse(-16, -24, 22, 7, -.15, 0, TAU); c.fill();
+      c.fillStyle = '#b6830f66'; [[-30, 10], [10, 18], [34, -2], [-6, -2], [46, 16], [-48, 2]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 2, 0, TAU); c.fill(); });
+      c.restore(); leaf(c, 36, -48, 25, 10, -.5);
+    },
+    c => { // 포도
+      c.strokeStyle = '#5a3a1c'; c.lineWidth = 6; c.beginPath(); c.moveTo(2, -30); c.quadraticCurveTo(0, -52, 14, -64); c.stroke();
+      leaf(c, 38, -60, 26, 11, -.3);
+      [[-32, -8], [0, -12], [32, -8], [-16, 16], [16, 16], [0, 42]].forEach(([x, y]) => {
+        c.fillStyle = rad(c, x - 6, y - 7, 2, 24, [[0, '#d7a8f0'], [.45, '#8a45b8'], [1, '#3d1860']]); c.beginPath(); c.arc(x, y, 20, 0, TAU); c.fill(); outline(c, 3.5, '#2a0f45');
+        c.fillStyle = '#fff7'; c.beginPath(); c.ellipse(x - 7, y - 8, 5, 3.5, -.6, 0, TAU); c.fill();
+      });
+    },
+    c => { // 수박
+      const cy = -30, R = 74;
+      c.beginPath(); c.moveTo(-R, cy); c.arc(0, cy, R, Math.PI, 0, true); c.closePath();
+      c.fillStyle = lin(c, 0, cy, 0, cy + R, [[0, '#4aa04b'], [1, '#1f5f2c']]); c.fill(); outline(c, 6, '#173f1f');
+      c.beginPath(); c.moveTo(-R + 9, cy); c.arc(0, cy, R - 9, Math.PI, 0, true); c.closePath(); c.fillStyle = '#eef0c8'; c.fill();
+      c.beginPath(); c.moveTo(-R + 17, cy); c.arc(0, cy, R - 17, Math.PI, 0, true); c.closePath();
+      c.fillStyle = rad(c, 0, cy, 4, R, [[0, '#ff8a7a'], [.55, '#e8344a'], [1, '#b3182f']]); c.fill();
+      c.fillStyle = '#20100d'; [[-36, -4, .5], [-12, 14, .2], [14, -6, -.2], [30, 8, -.5], [-8, -16, .1]].forEach(([x, y, r]) => { c.beginPath(); c.ellipse(x, y, 4.5, 8, r, 0, TAU); c.fill(); });
+      c.strokeStyle = '#ffffff55'; c.lineWidth = 5; c.beginPath(); c.arc(0, cy, R - 3, Math.PI * .66, Math.PI * .86); c.stroke();
+    },
+    c => { // 종
       c.beginPath(); c.moveTo(-50, 38); c.bezierCurveTo(-50, -8, -42, -56, 0, -58); c.bezierCurveTo(42, -56, 50, -8, 50, 38);
       c.lineTo(68, 54); c.lineTo(-68, 54); c.closePath();
       c.fillStyle = brass(c, -60, -50, 60, 50); c.fill(); c.strokeStyle = '#3d2a10'; c.lineWidth = 6; c.stroke();
       c.strokeStyle = '#fff3c8aa'; c.lineWidth = 7; c.beginPath(); c.moveTo(-30, 28); c.bezierCurveTo(-30, -8, -26, -36, -8, -44); c.stroke();
       c.fillStyle = '#5a3d14'; c.beginPath(); c.arc(0, 66, 13, 0, TAU); c.fill(); c.strokeStyle = '#3d2a10'; c.lineWidth = 4; c.stroke();
       c.beginPath(); c.arc(0, -66, 8, 0, TAU); c.fillStyle = '#c99c46'; c.fill(); c.stroke();
-    } else if (i === 2) { // 보석
-      const P = [[-36, -46], [36, -46], [70, -12], [0, 64], [-70, -12]];
-      c.beginPath(); P.forEach(([x, y], k) => k ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath();
-      c.fillStyle = lin(c, -60, -46, 60, 64, [[0, '#4fc7b5'], [.5, '#1b8576'], [1, '#0b4a43']]); c.fill();
-      c.fillStyle = '#a5efe2aa'; c.beginPath(); c.moveTo(-36, -46); c.lineTo(36, -46); c.lineTo(20, -12); c.lineTo(-20, -12); c.closePath(); c.fill();
-      c.strokeStyle = '#06322e'; c.lineWidth = 3.5; c.beginPath(); c.moveTo(-70, -12); c.lineTo(70, -12); c.moveTo(-36, -46); c.lineTo(-20, -12); c.lineTo(0, 64); c.moveTo(36, -46); c.lineTo(20, -12); c.lineTo(0, 64); c.stroke();
-      c.beginPath(); P.forEach(([x, y], k) => k ? c.lineTo(x, y) : c.moveTo(x, y)); c.closePath(); c.lineWidth = 6; c.strokeStyle = '#0a3d38'; c.stroke();
-    } else if (i === 3) { // 체리
-      c.strokeStyle = '#2f6a3a'; c.lineWidth = 6; c.beginPath(); c.moveTo(-26, 22); c.quadraticCurveTo(-18, -34, 8, -56); c.moveTo(30, 30); c.quadraticCurveTo(24, -26, 8, -56); c.stroke();
-      c.fillStyle = '#3b8a49'; c.beginPath(); c.ellipse(30, -52, 26, 11, -.35, 0, TAU); c.fill(); c.strokeStyle = '#1d4a28'; c.lineWidth = 3.5; c.stroke();
-      [[-28, 36, 28], [30, 42, 27]].forEach(([x, y, r]) => {
-        c.fillStyle = rad(c, x - 9, y - 10, 2, r + 4, [[0, '#f2766a'], [.5, '#c0262e'], [1, '#6d0e18']]); c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
-        c.strokeStyle = '#4b0911'; c.lineWidth = 4; c.stroke(); c.fillStyle = '#fff3'; c.beginPath(); c.ellipse(x - 9, y - 11, 6, 9, .5, 0, TAU); c.fill();
-      });
-    } else if (i === 4) { // 바
-      rr(c, -68, -34, 136, 68, 10); c.fillStyle = '#17100d'; c.fill(); c.lineWidth = 6; c.strokeStyle = brass(c, -68, -34, 68, 34); c.stroke();
-      c.fillStyle = '#efe6cf'; c.font = `900 46px ${SANS}`; c.textAlign = 'center'; c.textBaseline = 'middle';
-      if ('letterSpacing' in c) c.letterSpacing = '5px'; c.fillText('BAR', 2, 3); if ('letterSpacing' in c) c.letterSpacing = '0px';
-    } else if (i === 5) { // 7
-      c.font = `900 150px ${SERIF}`; c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.lineWidth = 14; c.strokeStyle = '#2a0b0c'; c.strokeText('7', 0, 8);
-      c.fillStyle = lin(c, 0, -60, 0, 70, [[0, '#f1655a'], [.5, '#b81f2b'], [1, '#6d0f19']]); c.fillText('7', 0, 8);
-      c.lineWidth = 3; c.strokeStyle = '#ffcfa655'; c.strokeText('7', -2, 5);
-    } else { // 말굽
-      c.lineCap = 'butt'; c.lineWidth = 26; c.strokeStyle = '#2a2724'; c.beginPath(); c.arc(0, 6, 52, Math.PI * .76, Math.PI * 2.24); c.stroke();
-      c.lineWidth = 17; c.strokeStyle = chrome(c, -60, -50, 60, 50); c.beginPath(); c.arc(0, 6, 52, Math.PI * .76, Math.PI * 2.24); c.stroke();
-      c.fillStyle = '#2a2724';
-      for (let k = 0; k < 5; k++) { const a = Math.PI * (.96 + k * .27); c.beginPath(); c.arc(Math.cos(a) * 52, 6 + Math.sin(a) * 52, 3.2, 0, TAU); c.fill(); }
+    },
+    c => { // 7
+      c.font = `900 188px ${SERIF}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.lineWidth = 16; c.strokeStyle = '#2a0b0c'; c.strokeText('7', 0, 10);
+      c.fillStyle = lin(c, 0, -70, 0, 84, [[0, '#f1655a'], [.5, '#b81f2b'], [1, '#6d0f19']]); c.fillText('7', 0, 10);
+      c.lineWidth = 3; c.strokeStyle = '#ffcfa655'; c.strokeText('7', -2, 7);
     }
+  ];
+  function drawStar(c) { // 마퀴 장식으로만 쓰는 마감구조대 별
+    for (let k = 0; k < 8; k++) {
+      c.save(); c.rotate(k * Math.PI / 4);
+      c.strokeStyle = '#7d1320'; c.lineWidth = 25; c.beginPath(); c.moveTo(0, -8); c.lineTo(0, -76); c.stroke();
+      c.strokeStyle = '#c7303c'; c.lineWidth = 15; c.beginPath(); c.moveTo(0, -10); c.lineTo(0, -70); c.stroke();
+      c.strokeStyle = '#ee7a6e'; c.lineWidth = 4; c.beginPath(); c.moveTo(-3, -18); c.lineTo(-3, -62); c.stroke(); c.restore();
+    }
+    c.fillStyle = brass(c, -22, -22, 22, 22); c.beginPath(); c.arc(0, 0, 20, 0, TAU); c.fill();
+    c.strokeStyle = '#4a300c'; c.lineWidth = 4; c.stroke();
+    c.fillStyle = '#7d1320'; c.beginPath(); c.arc(0, 0, 8, 0, TAU); c.fill();
   }
   let sprites = null;
   function getSprites() {
     if (sprites) return sprites;
-    sprites = Array.from({ length: N }, (_, i) => {
+    const make = fn => {
       const cv = document.createElement('canvas'); cv.width = cv.height = 240;
-      const c = cv.getContext('2d'); c.translate(120, 120); c.scale(1.4, 1.4); drawSymbol(c, i); return cv;
-    });
+      const c = cv.getContext('2d'); c.translate(120, 120); c.scale(1.4, 1.4); c.lineJoin = 'round'; c.lineCap = 'round'; fn(c); return cv;
+    };
+    sprites = { reel: SYMBOLS.map(make), star: make(drawStar) };
     return sprites;
   }
 
@@ -120,10 +141,11 @@
     let lastMeasure = -1, w = 0, h = 0, raf = null, stopped = false, ready = false, audio = null, phase = -1, lastNow = 0, coinTick = 0, carpet = null, ledTile = null;
     const start = performance.now();
     const seed = Math.random() * 1000, rnd = i => { const x = Math.sin(i * 127.1 + seed) * 43758.5453; return x - Math.floor(x); };
-    const SP = getSprites();
+    const ART = getSprites(), SP = ART.reel, STAR = ART.star;
 
+    const target = Math.floor(rnd(9) * SEVEN); // 이번에 맞출 그림: 7은 제외한 과일·종 중 하나
     const reels = [0, 1, 2].map(k => {
-      const p0 = Math.floor(rnd(k + 5) * N), D = N * (3 + k * 1) + ((N - p0 % N) % N);
+      const p0 = Math.floor(rnd(k + 5) * N), D = N * (3 + k * 1) + ((target - p0 % N + N) % N);
       return { p0, D, ts: TS + k * .012, te: STOPS[k], p: p0, spd: 0, lastIdx: p0, stopped: false };
     });
     const coins = []; let coinsMade = 0;
@@ -232,8 +254,8 @@
       /* 상단 마퀴 */
       rr(c, -254, 16, 508, 118, 50); c.fillStyle = lin(c, 0, 16, 0, 134, [[0, '#2a050a'], [1, '#430c13']]); c.fill();
       c.lineWidth = 3; c.strokeStyle = brass(c, -254, 16, 254, 134); c.stroke();
-      c.save(); c.translate(-188, 74); c.scale(.26, .26); c.drawImage(SP[0], -120, -120); c.restore();
-      c.save(); c.translate(188, 74); c.scale(.26, .26); c.drawImage(SP[0], -120, -120); c.restore();
+      c.save(); c.translate(-188, 74); c.scale(.26, .26); c.drawImage(STAR, -120, -120); c.restore();
+      c.save(); c.translate(188, 74); c.scale(.26, .26); c.drawImage(STAR, -120, -120); c.restore();
       c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `800 44px ${SERIF}`;
       if ('letterSpacing' in c) c.letterSpacing = '5px';
       c.fillStyle = 'rgba(0,0,0,.55)'; c.fillText('마감구조대', 2, 78);
