@@ -389,11 +389,11 @@
     $('orbit-announcement').textContent = '';
     $('orbit-title').textContent = winner;
     $('orbit-start').hidden = preview; $('orbit-start').disabled = true;
-    $('orbit-reroll').hidden = preview; $('orbit-reroll').disabled = true;
-    $('orbit-replay').hidden = !preview; $('orbit-replay').disabled = true;
+    $('orbit-reroll').hidden = false; $('orbit-reroll').disabled = true;
+    $('orbit-replay').hidden = true; $('orbit-replay').disabled = true;
     $('orbit-close').textContent = '건너뛰기 ↗';
     $('orbit-purpose').textContent = preview ? 'PREVIEW / 예시 할 일' : 'YOUR NEXT MOVE, CONFIRMED.';
-    $('orbit-result-note').textContent = preview ? effectNames[theme] + ' · 무료 체험 미리 보기' : '고민은 여기까지. 일단 5분만.';
+    $('orbit-result-note').textContent = preview ? effectNames[theme] + ' · 예시 할 일로 체험 중' : '고민은 여기까지. 일단 5분만.';
     document.body.classList.add('orbit-open');
     if (!dialog.open) dialog.showModal();
     stopOrbit = (impactThemes.includes(theme) ? window.playImpactReveal : window.playOrbitalReveal)({
@@ -414,9 +414,12 @@
     if (!orbitPreview && finishPick) finishPick();
     document.body.classList.remove('orbit-open');
   }
-  function previewOrbit(theme = 'orbit') {
+  function previewOrbit(theme = 'orbit', excludeTitle = null) {
     closePreview();
-    openOrbit(['발표 자료 첫 장 만들기', '영어 단어 복습하기', '책상 위 정리하기', 'AI 활용 공부하기'], '발표 자료 첫 장 만들기', true, theme);
+    const titles = ['발표 자료 첫 장 만들기', '영어 단어 복습하기', '책상 위 정리하기', 'AI 활용 공부하기'];
+    const candidates = titles.filter(title => title !== excludeTitle);
+    const winner = excludeTitle ? candidates[Math.floor(Math.random() * candidates.length)] : titles[0];
+    openOrbit(titles, winner, true, theme);
   }
 
   function openTask(id) {
@@ -521,6 +524,10 @@
   $('orbit-replay').addEventListener('click', () => previewOrbit(previewTheme));
   document.querySelectorAll('.impact-preview').forEach(button => button.addEventListener('click', () => previewOrbit(button.dataset.theme)));
   $('orbit-reroll').addEventListener('click', () => {
+    if (orbitPreview) {
+      if ($('orbit-reroll').disabled) return;
+      previewOrbit(previewTheme, $('orbit-title').textContent); return;
+    }
     const task = selectedTask(); if (!task || choosing || orbitPreview) return;
     if (!E.eligible(state.tasks.filter(item => item.id !== task.id)).length) {
       $('orbit-result-note').textContent = '지금 할 수 있는 다른 일이 없어요. 이 임무로 시작해 볼까요?';
