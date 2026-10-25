@@ -7,6 +7,7 @@
   const importanceNames = { high: '중요도 높음', normal: '중요도 보통', low: '중요도 낮음' };
   let state = { tasks: [], sample: true, selectedId: null, focus: null, activity: {} };
   let pendingNoteId = null;
+  let stopDispatch = null, stopPreview = null, finishPick = null;
   let editingId = null, choosing = false, timerInterval = null, reelInterval = null, pickTimeout = null;
   let toastTimeout = null, pendingConfirmation = null, storageAvailable = true, planShown = false;
   let currentDay = E.localDate();
@@ -36,7 +37,7 @@
       if (!raw) { state.tasks = samples(); return; }
       const saved = JSON.parse(raw);
       if (!Array.isArray(saved.tasks) || !saved.tasks.every(isTask)) throw new Error('invalid saved tasks');
-      state = { tasks: saved.tasks.slice(0, 100).map(task => ({ ...task, progressNote: typeof task.progressNote === 'string' ? task.progressNote.slice(0, 300) : '' })), sample: Boolean(saved.sample), selectedId: saved.selectedId || null, selectionExcludedId: saved.selectionExcludedId || null, focus: saved.focus || null, activity: Object.fromEntries(Object.entries(saved.activity || {}).filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && value && Number.isFinite(value.milliseconds) && value.milliseconds >= 0 && Number.isFinite(value.starts) && value.starts >= 0)) };
+      state = { effect: saved.effect === 'dispatch' ? 'dispatch' : 'basic', tasks: saved.tasks.slice(0, 100).map(task => ({ ...task, progressNote: typeof task.progressNote === 'string' ? task.progressNote.slice(0, 300) : '' })), sample: Boolean(saved.sample), selectedId: saved.selectedId || null, selectionExcludedId: saved.selectionExcludedId || null, focus: saved.focus || null, activity: Object.fromEntries(Object.entries(saved.activity || {}).filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && value && Number.isFinite(value.milliseconds) && value.milliseconds >= 0 && Number.isFinite(value.starts) && value.starts >= 0)) };
       const selected = selectedTask();
       if (!selected || selected.doneAt || selected.deferredOn === currentDay || selected.pausedOn === currentDay) { state.selectedId = null; state.focus = null; }
       if (state.selectedId && state.focus) focus = E.restoreFocus(state.focus);
@@ -111,7 +112,7 @@
     const selected = selectedTask();
     $('decision-rest').hidden = Boolean(selected);
     $('decision-result').hidden = !selected;
-    $('reel').hidden = true;
+    $('reel').hidden = true; $('dispatch-stage').hidden = true; $('skip-current-effect').hidden = true;
     $('defer-button').hidden = !selected;
     $('reroll-button').hidden = !selected;
     $('quick-start').hidden = Boolean(selected);
@@ -146,6 +147,7 @@
     $('quick-start').disabled = choosing || !E.eligible(state.tasks).length;
     for (const el of document.querySelectorAll('.task-menu button, .restore-task, .undo-task, #add-task, #add-task-bottom, #sample-button, #clear-button')) el.disabled = choosing;
     $('skip-animation').disabled = choosing;
+    $('open-effects').disabled = choosing;
     $('complete-button').disabled = choosing || !selected;
     $('timer-button').disabled = choosing || !selected;
     $('pause-today-button').disabled = choosing || !selected;
@@ -269,18 +271,83 @@
       const item = node('div', 'reel-item', pool[reelIndex++ % pool.length].title);
       $('reel-window').replaceChildren(item);
     }
-    showReel();
-    const skip = $('skip-animation').checked || reducedMotion.matches;
-    if (!skip) reelInterval = setInterval(showReel, 110);
-    pickTimeout = setTimeout(() => {
-      clearInterval(reelInterval); reelInterval = null; pickTimeout = null;
+    const skip = autoStart || $('skip-animation').checked || reducedMotion.matches;
+    const dispatch = state.effect === 'dispatch' && !skip;
+    let finished = false;
+    finishPick = () => {
+      if (finished) return; finished = true;
+      clearInterval(reelInterval); clearTimeout(pickTimeout);
+      reelInterval = null; pickTimeout = null;
+      if (stopDispatch) { stopDispatch(); stopDispatch = null; }
+      finishPick = null;
       state.selectedId = selection.task.id; choosing = false;
       save(); renderTasks(); renderDecision(selection.tied); renderPlan();
       document.querySelector('.decision-panel').scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'start' });
       announce(`지금 할 일은 ${selection.task.title}. ${E.reason(selection.task, candidates, E.localDate(), selection.tied)}${selection.task.progressNote ? ' 지난 메모: ' + selection.task.progressNote : ''}`);
       if (autoStart) startFromResult();
-    }, autoStart || skip ? 0 : 1650);
+    };
+    $('skip-current-effect').hidden = skip;
+    if (dispatch) {
+      $('reel').hidden = true; $('dispatch-stage').hidden = false;
+      stopDispatch = playDispatch($('dispatch-stage'), pool.map(task => task.title), selection.task.title);
+    } else {
+      showReel();
+      if (!skip) reelInterval = setInterval(showReel, 110);
+    }
+    pickTimeout = setTimeout(finishPick, skip ? 0 : dispatch ? 2350 : 1650);
   }
+  // Both previews and real selections use the same visual; only choose() changes tasks.
+  function playDispatch(stage, titles, winner, onFinish = () => {}) {
+    stage.replaceChildren(); stage.classList.remove('dispatch-landed', 'dispatch-confirmed');
+    const heading = node('p', 'dispatch-heading mono', 'RESCUE DISPATCH / 001');
+    const deck = node('div', 'dispatch-deck');
+    const card = node('div', 'dispatch-card');
+    const label = node('span', 'dispatch-card-label mono', 'YOUR NEXT MISSION');
+    const title = node('strong', 'dispatch-title', titles[0]);
+    const stamp = node('span', 'dispatch-stamp', '출동 확정');
+    card.append(label, title, stamp); deck.append(card);
+    const caption = node('p', 'dispatch-caption', '출동할 임무 확인 중…');
+    stage.append(heading, deck, caption);
+    let index = 0;
+    const cycle = setInterval(() => {
+      title.textContent = titles[++index % titles.length];
+      card.classList.remove('card-flip'); void card.offsetWidth; card.classList.add('card-flip');
+    }, 125);
+    const land = setTimeout(() => {
+      clearInterval(cycle); card.classList.remove('card-flip'); title.textContent = winner;
+      stage.classList.add('dispatch-landed'); caption.textContent = '고민은 여기까지. 일단 5분만.';
+    }, 1200);
+    const confirm = setTimeout(() => stage.classList.add('dispatch-confirmed'), 1480);
+    const end = setTimeout(onFinish, 2350);
+    return () => { clearInterval(cycle); clearTimeout(land); clearTimeout(confirm); clearTimeout(end); };
+  }
+  function renderEffects() {
+    const effect = state.effect === 'dispatch' ? 'dispatch' : 'basic';
+    $('effect-current').textContent = effect === 'dispatch' ? '구조대 출동' : '기본 룰렛';
+    document.querySelectorAll('.effect-apply').forEach(button => {
+      const active = button.dataset.effect === effect;
+      button.disabled = active; button.textContent = active ? '사용 중 ✓' : button.dataset.effect === 'dispatch' ? '체험 적용' : '적용하기';
+      button.closest('.effect-card').classList.toggle('effect-selected', active);
+    });
+  }
+  function closePreview() {
+    if (stopPreview) { stopPreview(); stopPreview = null; }
+    $('effect-preview').hidden = true; $('preview-dispatch').disabled = false;
+  }
+  function previewDispatch() {
+    closePreview(); $('effect-preview').hidden = false; $('preview-dispatch').disabled = true;
+    $('preview-status').textContent = '예시 연출을 재생하고 있어요.';
+    if (reducedMotion.matches) {
+      $('preview-stage').replaceChildren(node('p', 'dispatch-caption', '구조대 출동 · 출동 확정'), node('strong', 'dispatch-title', '발표 자료 첫 장 만들기'));
+      $('preview-status').textContent = '동작 줄이기 설정에 따라 정지 화면으로 보여드려요.';
+      $('preview-dispatch').disabled = false;
+    } else stopPreview = playDispatch($('preview-stage'), ['발표 자료 첫 장 만들기', '영어 단어 복습하기', '책상 위 정리하기'], '발표 자료 첫 장 만들기', () => {
+      stopPreview = null; $('preview-status').textContent = '미리 보기 완료 · 내 할 일과 타이머는 그대로예요.';
+      $('preview-dispatch').disabled = false;
+    });
+    $('effect-preview').scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'nearest' });
+  }
+
   function openTask(id) {
     if (choosing) return;
     if (state.tasks.length >= 100 && !id) { toast('목록에는 최대 100개까지 담을 수 있어요. 끝낸 일을 정리해 주세요.'); return; }
@@ -374,6 +441,15 @@
   }
   function updateDate() { $('today-label').textContent = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date()); $('today-label').dateTime = E.localDate(); }
 
+  $('open-effects').addEventListener('click', () => { renderEffects(); $('effects-dialog').showModal(); });
+  $('preview-dispatch').addEventListener('click', previewDispatch);
+  $('close-effect-preview').addEventListener('click', closePreview);
+  $('effects-dialog').addEventListener('close', closePreview);
+  document.querySelectorAll('.effect-apply').forEach(button => button.addEventListener('click', () => {
+    state.effect = button.dataset.effect; save(); renderEffects(); $('effects-dialog').close();
+    toast(state.effect === 'dispatch' ? '구조대 출동 연출을 체험 적용했어요.' : '기본 룰렛을 적용했어요.');
+  }));
+  $('skip-current-effect').addEventListener('click', () => { if (finishPick) finishPick(); });
   $('add-task').addEventListener('click', () => openTask());
   $('add-task-bottom').addEventListener('click', () => openTask());
   $('task-form').addEventListener('submit', saveTask);
@@ -439,7 +515,7 @@
   document.addEventListener('visibilitychange', () => { rollover(); if (!document.hidden) tick(); });
   window.addEventListener('pagehide', save);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
-  load(); updateDate(); renderTasks(); renderDecision(); renderPlan(); save();
+  load(); renderEffects(); updateDate(); renderTasks(); renderDecision(); renderPlan(); save();
   $('skip-animation').checked = reducedMotion.matches;
   if (focus.running) { tick(); timerInterval = setInterval(tick, 250); }
   setInterval(rollover, 60000);
