@@ -337,14 +337,27 @@
   function renderEffects() {
     const effect = ['dispatch', 'orbit', ...impactThemes].includes(state.effect) ? state.effect : 'basic';
     $('effect-current').textContent = effectNames[effect];
+    $('effects-active-name').textContent = effectNames[effect];
     $('orbit-length').value = String(state.orbitLength === 1000 ? 1000 : 3000);
     $('orbit-sound').checked = state.orbitSound === true;
     renderFocusTheme(); renderTimer();
     document.querySelectorAll('.effect-apply').forEach(button => {
       const active = button.dataset.effect === effect;
+      button.setAttribute('aria-label', effectNames[button.dataset.effect] + (active ? ' 현재 사용 중' : ' 적용하기'));
       button.disabled = active; button.textContent = active ? '사용 중 ✓' : button.dataset.effect !== 'basic' ? '체험 적용' : '적용하기';
       button.closest('.effect-card').classList.toggle('effect-selected', active);
     });
+  }
+  function filterEffects(group) {
+    const labels = {all:'전체',simple:'담백한',immersive:'몰입하는',playful:'게임 같은'};
+    let count = 0;
+    document.querySelectorAll('[data-effect-card]').forEach(card => {
+      const shown = group === 'all' || card.dataset.effectGroup === group;
+      card.hidden = !shown;
+      if (shown) count++;
+    });
+    document.querySelectorAll('[data-effect-filter]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.effectFilter === group)));
+    $('effect-filter-status').textContent = `${labels[group]} 연출 ${count}개`;
   }
   function renderFocusTheme() {
     const orbital = state.effect === 'orbit';
@@ -539,7 +552,14 @@
     choose({ excludeId: task.id });
   });
   $('orbit-start').addEventListener('click', () => { $('orbit-dialog').close(); endOrbit(); startFromResult(); });
-  $('open-effects').addEventListener('click', () => { renderEffects(); $('effects-dialog').showModal(); });
+  $('open-effects').addEventListener('click', () => { renderEffects(); filterEffects('all'); $('effects-dialog').showModal(); });
+  document.querySelectorAll('[data-effect-filter]').forEach(button => button.addEventListener('click', () => { closePreview(); filterEffects(button.dataset.effectFilter); }));
+  document.querySelectorAll('[data-effect-card]').forEach(card => {
+    const name = card.querySelector('h3').textContent;
+    const preview = card.querySelector('.impact-preview, #preview-orbit, #preview-dispatch');
+    if (preview) preview.setAttribute('aria-label', name + ' 미리 보기');
+    card.querySelector('.effect-apply').setAttribute('aria-label', name + ' 적용하기');
+  });
   $('preview-dispatch').addEventListener('click', previewDispatch);
   $('close-effect-preview').addEventListener('click', closePreview);
   $('effects-dialog').addEventListener('close', closePreview);
