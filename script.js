@@ -187,8 +187,12 @@
     $('session-total').textContent = totalText;
     $('focus-mode-time').textContent = clock;
     $('focus-mode-time').classList.toggle('long-time', clock.length > 5);
-    $('focus-mode-phase').textContent = $('timer-phase').textContent;
-    $('focus-mode-state').textContent = $('timer-state').textContent;
+    const orbital = state.effect === 'orbit';
+    $('focus-mode-phase').textContent = orbital && view.overtime ? '추가 탐사 중' : $('timer-phase').textContent;
+    $('focus-dialog').classList.toggle('orbit-overtime', view.overtime);
+    $('focus-dialog').classList.toggle('orbit-paused', !running);
+    $('focus-orbit-progress').style.strokeDashoffset = String(1030.44 * (1 - Math.min(1, view.elapsedMs / (focus.duration * 1000))));
+    $('focus-mode-state').textContent = orbital && running ? view.overtime ? '시작을 넘어, 내 페이스로 탐사해요.' : '지금은 이 임무 하나에만' : $('timer-state').textContent;
     $('focus-mode-total').textContent = totalText;
     $('focus-mode-clock').setAttribute('aria-label', view.overtime ? '추가 집중 시간' : '처음 5분 남은 시간');
     $('focus-mode-toggle').textContent = $('timer-button').textContent;
@@ -229,7 +233,7 @@
     $('focus-mode-context').hidden = !task.progressNote;
     $('focus-mode-note').hidden = !task.progressNote;
     $('focus-mode-note-text').textContent = task.progressNote || '';
-    renderTimer();
+    renderFocusTheme(); renderTimer();
     if (!$('focus-dialog').open) $('focus-dialog').showModal();
     document.body.classList.add('focus-mode-open');
     $('focus-mode-toggle').focus();
@@ -331,11 +335,19 @@
     $('effect-current').textContent = { basic: '기본 룰렛', dispatch: '구조대 출동', orbit: '궤도 강하' }[effect];
     $('orbit-length').value = String(state.orbitLength === 1000 ? 1000 : 3000);
     $('orbit-sound').checked = state.orbitSound === true;
+    renderFocusTheme(); renderTimer();
     document.querySelectorAll('.effect-apply').forEach(button => {
       const active = button.dataset.effect === effect;
       button.disabled = active; button.textContent = active ? '사용 중 ✓' : button.dataset.effect !== 'basic' ? '체험 적용' : '적용하기';
       button.closest('.effect-card').classList.toggle('effect-selected', active);
     });
+  }
+  function renderFocusTheme() {
+    const orbital = state.effect === 'orbit';
+    $('focus-dialog').classList.toggle('orbit-focus', orbital);
+    $('focus-dialog').querySelector('.focus-mode-header .eyebrow').textContent = orbital ? '✳ MAGAM RESCUE / DEEP FOCUS' : '✳ ONE THING AT A TIME.';
+    $('focus-mode-kicker').textContent = orbital ? 'ORBITAL FOCUS / 002' : '지금은 이것 하나만.';
+    $('focus-mode-title').textContent = orbital ? '현재 임무' : '시작은 작게';
   }
   function closePreview() {
     if (stopPreview) { stopPreview(); stopPreview = null; }
