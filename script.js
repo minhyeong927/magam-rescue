@@ -8,7 +8,9 @@
   let state = { tasks: [], sample: true, selectedId: null, focus: null, activity: {} };
   let pendingNoteId = null;
   let stopDispatch = null, stopPreview = null, finishPick = null;
-  let stopOrbit = null, orbitPreview = false;
+  let stopOrbit = null, orbitPreview = false, previewTheme = 'orbit';
+  const impactThemes = ['breakout', 'overdrive', 'capsule', 'comic'];
+  const effectNames = {basic:'기본 룰렛', dispatch:'구조대 출동', orbit:'궤도 강하', breakout:'고민을 깨부숴', overdrive:'오버드라이브', capsule:'캡슐 드롭', comic:'코믹 임팩트'};
   let editingId = null, choosing = false, timerInterval = null, reelInterval = null, pickTimeout = null;
   let toastTimeout = null, pendingConfirmation = null, storageAvailable = true, planShown = false;
   let currentDay = E.localDate();
@@ -38,7 +40,7 @@
       if (!raw) { state.tasks = samples(); return; }
       const saved = JSON.parse(raw);
       if (!Array.isArray(saved.tasks) || !saved.tasks.every(isTask)) throw new Error('invalid saved tasks');
-      state = { effect: ['dispatch', 'orbit'].includes(saved.effect) ? saved.effect : 'basic', orbitLength: saved.orbitLength === 1000 ? 1000 : 3000, orbitSound: saved.orbitSound === true, tasks: saved.tasks.slice(0, 100).map(task => ({ ...task, progressNote: typeof task.progressNote === 'string' ? task.progressNote.slice(0, 300) : '' })), sample: Boolean(saved.sample), selectedId: saved.selectedId || null, selectionExcludedId: saved.selectionExcludedId || null, focus: saved.focus || null, activity: Object.fromEntries(Object.entries(saved.activity || {}).filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && value && Number.isFinite(value.milliseconds) && value.milliseconds >= 0 && Number.isFinite(value.starts) && value.starts >= 0)) };
+      state = { effect: ['dispatch', 'orbit', ...impactThemes].includes(saved.effect) ? saved.effect : 'basic', orbitLength: saved.orbitLength === 1000 ? 1000 : 3000, orbitSound: saved.orbitSound === true, tasks: saved.tasks.slice(0, 100).map(task => ({ ...task, progressNote: typeof task.progressNote === 'string' ? task.progressNote.slice(0, 300) : '' })), sample: Boolean(saved.sample), selectedId: saved.selectedId || null, selectionExcludedId: saved.selectionExcludedId || null, focus: saved.focus || null, activity: Object.fromEntries(Object.entries(saved.activity || {}).filter(([key, value]) => /^\d{4}-\d{2}-\d{2}$/.test(key) && value && Number.isFinite(value.milliseconds) && value.milliseconds >= 0 && Number.isFinite(value.starts) && value.starts >= 0)) };
       const selected = selectedTask();
       if (!selected || selected.doneAt || selected.deferredOn === currentDay || selected.pausedOn === currentDay) { state.selectedId = null; state.focus = null; }
       if (state.selectedId && state.focus) focus = E.restoreFocus(state.focus);
@@ -279,7 +281,7 @@
     }
     const skip = autoStart || $('skip-animation').checked || reducedMotion.matches;
     const dispatch = state.effect === 'dispatch' && !skip;
-    const orbit = state.effect === 'orbit' && !skip;
+    const orbit = (state.effect === 'orbit' || impactThemes.includes(state.effect)) && !skip;
     let finished = false;
     finishPick = () => {
       if (finished) return; finished = true;
@@ -333,8 +335,8 @@
     return () => { clearInterval(cycle); clearTimeout(land); clearTimeout(confirm); clearTimeout(end); };
   }
   function renderEffects() {
-    const effect = ['dispatch', 'orbit'].includes(state.effect) ? state.effect : 'basic';
-    $('effect-current').textContent = { basic: '기본 룰렛', dispatch: '구조대 출동', orbit: '궤도 강하' }[effect];
+    const effect = ['dispatch', 'orbit', ...impactThemes].includes(state.effect) ? state.effect : 'basic';
+    $('effect-current').textContent = effectNames[effect];
     $('orbit-length').value = String(state.orbitLength === 1000 ? 1000 : 3000);
     $('orbit-sound').checked = state.orbitSound === true;
     renderFocusTheme(); renderTimer();
@@ -346,10 +348,16 @@
   }
   function renderFocusTheme() {
     const orbital = state.effect === 'orbit';
-    $('focus-dialog').classList.toggle('orbit-focus', orbital);
+    $('focus-dialog').classList.toggle('orbit-focus', orbital || impactThemes.includes(state.effect));
+    $('focus-dialog').dataset.theme = state.effect;
     $('focus-dialog').querySelector('.focus-mode-header .eyebrow').textContent = orbital ? '✳ MAGAM RESCUE / DEEP FOCUS' : '✳ ONE THING AT A TIME.';
     $('focus-mode-kicker').textContent = orbital ? 'ORBITAL FOCUS / 002' : '지금은 이것 하나만.';
     $('focus-mode-title').textContent = orbital ? '현재 임무' : '시작은 작게';
+    if (impactThemes.includes(state.effect)) {
+      $('focus-dialog').querySelector('.focus-mode-header .eyebrow').textContent = '✳ MAGAM RESCUE / FOCUS';
+      $('focus-mode-kicker').textContent = effectNames[state.effect];
+      $('focus-mode-title').textContent = {breakout:'시작의 벽을 넘어서',overdrive:'집중 에너지 충전 중',capsule:'오늘의 작은 한 걸음',comic:'지금, 나의 장면'}[state.effect];
+    }
   }
   function closePreview() {
     if (stopPreview) { stopPreview(); stopPreview = null; }
@@ -369,10 +377,14 @@
     $('effect-preview').scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'nearest' });
   }
 
-  function openOrbit(titles, winner, preview) {
+  function openOrbit(titles, winner, preview, theme = state.effect) {
     if (stopOrbit) stopOrbit();
-    orbitPreview = preview;
+    orbitPreview = preview; previewTheme = theme;
     const dialog = $('orbit-dialog');
+    dialog.dataset.theme = theme;
+    dialog.querySelector('.orbit-brand small').textContent = {orbit:'ORBITAL DROP / 002',breakout:'BREAK OUT / 003',overdrive:'OVERDRIVE / 004',capsule:'CAPSULE DROP / 005',comic:'COMIC IMPACT / 006'}[theme];
+    dialog.querySelector('.orbit-result-kicker').textContent = {orbit:'✦ MISSION LOCKED',breakout:'✹ 고민을 깨부숴',overdrive:'⚡ CHARGE COMPLETE',capsule:'✦ 오늘의 캡슐 OPEN!',comic:'쾅! 지금은 이거다.'}[theme];
+    dialog.querySelector('.orbit-result-copy').textContent = {orbit:'수많은 할 일 중, 지금은 이것 하나.',breakout:'시작의 벽을 깼어. 이제 한 걸음만.',overdrive:'준비 완료. 이 에너지를 시작으로.',capsule:'캡슐 속 작은 시작을 꺼내 봐요.',comic:'다음 장면은, 너의 작은 시작.'}[theme];
     dialog.classList.remove('orbit-ready'); dialog.dataset.phase = '0';
     $('orbit-announcement').textContent = '';
     $('orbit-title').textContent = winner;
@@ -381,10 +393,11 @@
     $('orbit-replay').hidden = !preview; $('orbit-replay').disabled = true;
     $('orbit-close').textContent = '건너뛰기 ↗';
     $('orbit-purpose').textContent = preview ? 'PREVIEW / 예시 할 일' : 'YOUR NEXT MOVE, CONFIRMED.';
-    $('orbit-result-note').textContent = preview ? '유료 연출 02 · 무료 체험 미리 보기' : '고민은 여기까지. 일단 5분만.';
+    $('orbit-result-note').textContent = preview ? effectNames[theme] + ' · 무료 체험 미리 보기' : '고민은 여기까지. 일단 5분만.';
     document.body.classList.add('orbit-open');
     if (!dialog.open) dialog.showModal();
-    stopOrbit = window.playOrbitalReveal({
+    stopOrbit = (impactThemes.includes(theme) ? window.playImpactReveal : window.playOrbitalReveal)({
+      theme,
       titles, winner, duration: state.orbitLength === 1000 ? 1000 : 3000,
       sound: state.orbitSound === true, reduced: reducedMotion.matches,
       onReady() {
@@ -401,9 +414,9 @@
     if (!orbitPreview && finishPick) finishPick();
     document.body.classList.remove('orbit-open');
   }
-  function previewOrbit() {
+  function previewOrbit(theme = 'orbit') {
     closePreview();
-    openOrbit(['발표 자료 첫 장 만들기', '영어 단어 복습하기', '책상 위 정리하기', 'AI 활용 공부하기'], '발표 자료 첫 장 만들기', true);
+    openOrbit(['발표 자료 첫 장 만들기', '영어 단어 복습하기', '책상 위 정리하기', 'AI 활용 공부하기'], '발표 자료 첫 장 만들기', true, theme);
   }
 
   function openTask(id) {
@@ -499,13 +512,14 @@
   }
   function updateDate() { $('today-label').textContent = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date()); $('today-label').dateTime = E.localDate(); }
 
-  $('preview-orbit').addEventListener('click', previewOrbit);
+  $('preview-orbit').addEventListener('click', () => previewOrbit('orbit'));
   $('orbit-length').addEventListener('change', () => { state.orbitLength = Number($('orbit-length').value); save(); });
   $('orbit-sound').addEventListener('change', () => { state.orbitSound = $('orbit-sound').checked; save(); });
   $('orbit-close').addEventListener('click', () => $('orbit-dialog').close());
   $('orbit-dialog').addEventListener('close', endOrbit);
   $('orbit-dialog').addEventListener('cancel', endOrbit);
-  $('orbit-replay').addEventListener('click', previewOrbit);
+  $('orbit-replay').addEventListener('click', () => previewOrbit(previewTheme));
+  document.querySelectorAll('.impact-preview').forEach(button => button.addEventListener('click', () => previewOrbit(button.dataset.theme)));
   $('orbit-reroll').addEventListener('click', () => {
     const task = selectedTask(); if (!task || choosing || orbitPreview) return;
     if (!E.eligible(state.tasks.filter(item => item.id !== task.id)).length) {
@@ -522,7 +536,7 @@
   $('effects-dialog').addEventListener('close', closePreview);
   document.querySelectorAll('.effect-apply').forEach(button => button.addEventListener('click', () => {
     state.effect = button.dataset.effect; save(); renderEffects(); $('effects-dialog').close();
-    toast(state.effect === 'orbit' ? '궤도 강하 연출을 체험 적용했어요.' : state.effect === 'dispatch' ? '구조대 출동 연출을 체험 적용했어요.' : '기본 룰렛을 적용했어요.');
+    toast(effectNames[state.effect] + (state.effect === 'basic' ? '을 적용했어요.' : ' 테마를 체험 적용했어요.'));
   }));
   $('skip-current-effect').addEventListener('click', () => { if (finishPick) finishPick(); });
   $('add-task').addEventListener('click', () => openTask());
