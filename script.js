@@ -530,6 +530,70 @@
   }
   function updateDate() { $('today-label').textContent = new Intl.DateTimeFormat('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date()); $('today-label').dateTime = E.localDate(); }
 
+  // Route between the introduction and one persistent workspace; timers keep running.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  const menuBreakpoint = window.matchMedia('(max-width: 800px)');
+  let currentSurface = null;
+  let routeFrame = null;
+  let galleryReturnControl = null;
+  function setMenu(open, returnFocus = false) {
+    const expanded = menuBreakpoint.matches && open;
+    const returnFromNavigation = menuBreakpoint.matches && !expanded && $('site-navigation').contains(document.activeElement);
+    const focusedMenuButton = document.activeElement === $('menu-toggle');
+    $('menu-toggle').setAttribute('aria-expanded', String(expanded));
+    $('menu-toggle').setAttribute('aria-label', expanded ? '메뉴 닫기' : '메뉴 열기');
+    $('site-navigation').hidden = menuBreakpoint.matches && !expanded;
+    if ((returnFocus || returnFromNavigation) && menuBreakpoint.matches) $('menu-toggle').focus();
+    else if (!menuBreakpoint.matches && focusedMenuButton) document.querySelector('.nav-intro').focus();
+  }
+  function openThemeGallery() {
+    galleryReturnControl = menuBreakpoint.matches && $('site-navigation').contains(document.activeElement) ? $('menu-toggle') : document.activeElement;
+    setMenu(false);
+    renderEffects(); filterEffects('all');
+    if (!$('effects-dialog').open) $('effects-dialog').showModal();
+  }
+  function showRoute(moveFocus = true) {
+    cancelAnimationFrame(routeFrame);
+    const hash = location.hash || '#home';
+    const nextSurface = hash === '#start' || hash === '#workspace' ? 'start' : 'home';
+    const changed = nextSurface !== currentSurface;
+    if (moveFocus) {
+      galleryReturnControl = null;
+      document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
+    }
+    document.querySelectorAll('[data-surface]').forEach(surface => { surface.hidden = surface.dataset.surface !== nextSurface; });
+    document.body.dataset.view = nextSurface;
+    document.title = nextSurface === 'start' ? '지금 할 일 — 마감구조대' : '마감구조대 — 고민은 여기까지. 지금은, 딱 하나.';
+    document.querySelectorAll('.nav-cta,.mobile-start').forEach(link => {
+      if (nextSurface === 'start') link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+    });
+    const intro = document.querySelector('.nav-intro');
+    if (hash === '#why' || hash === '#how') intro.setAttribute('aria-current', 'location'); else intro.removeAttribute('aria-current');
+    currentSurface = nextSurface;
+    setMenu(false);
+    routeFrame = requestAnimationFrame(() => {
+      const anchor = nextSurface === 'home' && ['#why','#how'].includes(hash) ? document.getElementById(hash.slice(1)) : null;
+      const heading = anchor?.querySelector('h2') || $(nextSurface === 'start' ? 'workspace-title' : 'hero-title');
+      if (moveFocus) { heading.setAttribute('tabindex', '-1'); heading.focus({preventScroll:true}); }
+      if (anchor) heading.scrollIntoView({behavior: reducedMotion.matches ? 'instant' : 'smooth',block:'start'});
+      else if (changed || moveFocus) window.scrollTo({top:0,left:0,behavior:'instant'});
+    });
+  }
+  document.querySelectorAll('a[data-route]').forEach(link => link.addEventListener('click', event => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const hash = link.getAttribute('href');
+    if (hash === location.hash) { event.preventDefault(); showRoute(); }
+    setMenu(false);
+  }));
+  $('menu-toggle').addEventListener('click', () => setMenu($('menu-toggle').getAttribute('aria-expanded') !== 'true'));
+  document.querySelectorAll('[data-open-effects]').forEach(button => button.addEventListener('click', openThemeGallery));
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && $('menu-toggle').getAttribute('aria-expanded') === 'true') { event.preventDefault(); setMenu(false,true); }
+  });
+  document.addEventListener('pointerdown', event => { if (!event.target.closest('.site-header')) setMenu(false); });
+  menuBreakpoint.addEventListener('change', () => setMenu(false));
+  window.addEventListener('hashchange', () => showRoute());
+
   $('preview-orbit').addEventListener('click', () => previewOrbit('orbit'));
   $('orbit-length').addEventListener('change', () => { state.orbitLength = Number($('orbit-length').value); save(); });
   $('orbit-sound').addEventListener('change', () => { state.orbitSound = $('orbit-sound').checked; save(); });
@@ -552,7 +616,7 @@
     choose({ excludeId: task.id });
   });
   $('orbit-start').addEventListener('click', () => { $('orbit-dialog').close(); endOrbit(); startFromResult(); });
-  $('open-effects').addEventListener('click', () => { renderEffects(); filterEffects('all'); $('effects-dialog').showModal(); });
+  $('open-effects').addEventListener('click', openThemeGallery);
   document.querySelectorAll('[data-effect-filter]').forEach(button => button.addEventListener('click', () => { closePreview(); filterEffects(button.dataset.effectFilter); }));
   document.querySelectorAll('[data-effect-card]').forEach(card => {
     const name = card.querySelector('h3').textContent;
@@ -562,7 +626,14 @@
   });
   $('preview-dispatch').addEventListener('click', previewDispatch);
   $('close-effect-preview').addEventListener('click', closePreview);
-  $('effects-dialog').addEventListener('close', closePreview);
+  $('effects-dialog').addEventListener('close', () => {
+    closePreview();
+    if (galleryReturnControl) {
+      const control = galleryReturnControl.isConnected && galleryReturnControl.getClientRects().length ? galleryReturnControl : menuBreakpoint.matches ? $('menu-toggle') : document.querySelector('.nav-effects');
+      control.focus({preventScroll:true});
+    }
+    galleryReturnControl = null;
+  });
   document.querySelectorAll('.effect-apply').forEach(button => button.addEventListener('click', () => {
     state.effect = button.dataset.effect; save(); renderEffects(); $('effects-dialog').close();
     toast(effectNames[state.effect] + (state.effect === 'basic' ? '을 적용했어요.' : ' 테마를 체험 적용했어요.'));
@@ -633,6 +704,7 @@
   document.addEventListener('visibilitychange', () => { rollover(); if (!document.hidden) tick(); });
   window.addEventListener('pagehide', save);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+  showRoute(false);
   load(); renderEffects(); updateDate(); renderTasks(); renderDecision(); renderPlan(); save();
   $('skip-animation').checked = reducedMotion.matches;
   if (focus.running) { tick(); timerInterval = setInterval(tick, 250); }
