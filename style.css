@@ -243,3 +243,8 @@ body[data-view=start] .workspace-section{min-height:calc(100dvh - var(--site-hea
 @media(max-height:560px){.orbit-dialog[data-theme="slot"] .orbit-result{padding:16px 24px 14px}.orbit-dialog[data-theme="slot"] .orbit-result-copy,.orbit-dialog[data-theme="slot"] .orbit-result-note:after{display:none}.orbit-dialog[data-theme="slot"] .orbit-result-kicker{margin-bottom:10px;padding-bottom:8px}.orbit-dialog[data-theme="slot"] .orbit-result-actions{margin-top:14px}}
 @media(max-height:560px) and (min-width:700px){.orbit-dialog[data-theme="slot"] .orbit-result{left:69%;top:53%;width:min(44vw,430px)}.orbit-dialog[data-theme="slot"] .orbit-intro{display:none}}
 @media(prefers-reduced-motion:reduce){.orbit-dialog[data-theme="slot"] .orbit-result{transition:none!important}}
+
+/* Keep all focus actions available on narrow screens. */
+.focus-mode-secondary{flex-wrap:wrap}
+.focus-mode-secondary .button{flex:0 1 auto}
+.focus-mode-feedback{max-width:480px;margin:16px auto 0;font-size:14px;line-height:1.6;color:inherit}

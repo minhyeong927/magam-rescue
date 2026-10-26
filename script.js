@@ -232,6 +232,7 @@
   }
   function openFocusMode() {
     const task = selectedTask(); if (!task || choosing) return;
+    $('focus-mode-feedback').hidden = true;
     $('focus-mode-task').textContent = task.title;
     $('focus-mode-context').hidden = !task.progressNote;
     $('focus-mode-note').hidden = !task.progressNote;
@@ -637,6 +638,17 @@
   $('close-focus').addEventListener('click', closeFocusMode);
   $('focus-dialog').addEventListener('close', () => document.body.classList.remove('focus-mode-open'));
   $('focus-mode-toggle').addEventListener('click', timerToggle);
+  $('focus-mode-reroll').addEventListener('click', () => {
+    const task = selectedTask(); if (!task || choosing) return;
+    if (!E.eligible(state.tasks.filter(item => item.id !== task.id)).length) {
+      $('focus-mode-feedback').textContent = '지금 뽑을 수 있는 다른 일이 없어요. 목록에서 할 일을 추가해 주세요.';
+      $('focus-mode-feedback').hidden = false;
+      return;
+    }
+    if (focus.running) timerToggle();
+    closeFocusMode();
+    choose({ excludeId: task.id });
+  });
   $('focus-mode-pause').addEventListener('click', () => { closeFocusMode(); openProgressNote(); });
   $('focus-mode-complete').addEventListener('click', () => { closeFocusMode(); completeTask(); });
   $('progress-form').addEventListener('submit', event => { event.preventDefault(); pauseToday($('progress-note').value); });
