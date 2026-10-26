@@ -1,0 +1,137 @@
+@font-face{font-family:PackDisplay;src:url('fonts/BarlowCondensed-ExtraBold.ttf') format('truetype');font-style:normal;font-weight:800;font-display:swap}
+/* Foil is a material: crimped seams, folded edges and directional reflection. */
+.pack-foil{--foil-ink:#18243a;--foil-light:#edf1f4;position:relative;display:block;width:100%;height:100%;color:var(--foil-ink);transform-style:preserve-3d;filter:drop-shadow(9px 19px 18px #0006)}
+.pack-foil[data-metal=cobalt]{--foil-ink:#edf1f7;--foil-light:#2858c5}
+.pack-foil[data-metal=copper]{--foil-ink:#422514;--foil-light:#e2ae8b}
+.pack-sleeve,.pack-tear{position:absolute;inset:0;isolation:isolate;background:linear-gradient(97deg,#6c7882 0%,#eef0eb 3%,#8998a5 6%,#e0e6e8 15%,#fafbf7 31%,#adb9c5 48%,#f5f5eb 67%,#a7b6c1 85%,#e5e9e9 93%,#778b99 97%,#d8dfe0 100%);border-inline:1px solid #eef4f1}
+.pack-sleeve{clip-path:polygon(0 1%,100% 0,99% 98%,97% 100%,94% 98%,91% 100%,88% 98%,85% 100%,82% 98%,79% 100%,76% 98%,73% 100%,70% 98%,67% 100%,64% 98%,61% 100%,58% 98%,55% 100%,52% 98%,49% 100%,46% 98%,43% 100%,40% 98%,37% 100%,34% 98%,31% 100%,28% 98%,25% 100%,22% 98%,19% 100%,16% 98%,13% 100%,10% 98%,7% 100%,4% 98%,1% 100%)}
+.pack-foil[data-metal=cobalt] .pack-sleeve,.pack-foil[data-metal=cobalt] .pack-tear{background:linear-gradient(97deg,#192947,#6b9bea 4%,#244a90 7%,#1c3e83 16%,#487bd1 33%,#204caa 49%,#6188cd 68%,#183b80 87%,#5275b7 96%,#193b70)}
+.pack-foil[data-metal=copper] .pack-sleeve,.pack-foil[data-metal=copper] .pack-tear{background:linear-gradient(97deg,#6f4936,#eed2b4 4%,#9d6045 7%,#c18563 16%,#f4d6b8 33%,#ba8267 49%,#f4cfaa 68%,#9d684e 87%,#ebbe93 96%,#89533b)}
+.pack-print{position:absolute;inset:15% 9% 11%;display:flex;flex-direction:column;align-items:flex-start;border-top:1px solid currentColor;border-bottom:1px solid currentColor;padding-top:7%;text-align:left;overflow:hidden}
+.pack-maker{font-size:clamp(7px,1vw,10px);font-weight:800;letter-spacing:.08em;line-height:1}
+.pack-wordmark{font-family:PackDisplay,var(--sans);font-weight:800;font-size:clamp(50px,8vw,83px);line-height:.82;letter-spacing:-.025em;display:block;margin-top:8%;z-index:2}
+.pack-emblem{position:absolute;right:-12%;top:24%;width:82%;transform:rotate(-14deg);opacity:.18}
+.pack-emblem svg{display:block;width:100%;height:auto;stroke:none}
+.pack-edition{font:800 10px var(--sans);letter-spacing:.12em;margin-top:auto;padding-bottom:7%;z-index:2}
+.pack-bottomline{display:flex;justify-content:space-between;align-items:flex-end;width:100%;padding:7% 0;border-top:1px solid currentColor;font-size:8px;line-height:1.3;letter-spacing:.02em}
+.pack-bottomline>b{font-family:PackDisplay,var(--sans);font-size:13px;font-weight:800;letter-spacing:.04em}
+.pack-tear{height:14%;bottom:auto;transform-origin:94% 95%;clip-path:polygon(0 5%,3% 0,6% 5%,9% 0,12% 5%,15% 0,18% 5%,21% 0,24% 5%,27% 0,30% 5%,33% 0,36% 5%,39% 0,42% 5%,45% 0,48% 5%,51% 0,54% 5%,57% 0,60% 5%,63% 0,66% 5%,69% 0,72% 5%,75% 0,78% 5%,81% 0,84% 5%,87% 0,90% 5%,93% 0,96% 5%,100% 0,100% 100%,0 100%);z-index:4}
+.pack-seal{position:absolute;inset:5% 0 auto;height:27%;background:repeating-linear-gradient(90deg,#fff7 0 1px,#12253325 1px 3px,transparent 3px 5px);border-block:1px solid #14203144;opacity:.8}
+.pack-seal-bottom{inset:auto 0 1.5%;height:5%}
+.pack-tear-copy{position:absolute;left:9%;right:9%;bottom:15%;display:flex;justify-content:space-between;font-size:7px;letter-spacing:.13em;font-weight:800}
+.pack-cut{position:absolute;left:0;right:0;top:13.8%;height:3px;background:#f7faf1;box-shadow:0 1px 2px #141a26;clip-path:inset(0 100% 0 0);z-index:5}
+.pack-reflection{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:.22;background:linear-gradient(112deg,transparent 12%,#fff0 33%,#fff 39%,#fff0 48%,transparent 62%);background-size:220% 100%;background-position:var(--shine,50%) 50%;mix-blend-mode:screen}
+
+.orbit-dialog[data-theme=pack]{--pack-time:1s;--pack-blue:#becbff;background:#10141b;color:#f0f3f2;perspective:1400px}
+.orbit-dialog[data-theme=pack]::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,#293644 0%,#161f2a 36%,#10141b 72%)}
+.orbit-dialog[data-theme=pack] .orbit-grain,.orbit-dialog[data-theme=pack] .orbit-telemetry,.orbit-dialog[data-theme=pack] .orbit-intro,.orbit-dialog[data-theme=pack] .orbit-loading{display:none}
+.orbit-dialog[data-theme=pack] .orbit-header{z-index:20;pointer-events:none}
+.orbit-dialog[data-theme=pack] .orbit-exit{pointer-events:auto;color:#e0e7ed;background:#17212d;border:1px solid #647384;box-shadow:none}
+.orbit-dialog[data-theme=pack] .orbit-exit:hover{background:#2d3b4d}
+.orbit-dialog[data-theme=pack] .orbit-brand,.orbit-dialog[data-theme=pack] .orbit-brand small,.orbit-dialog[data-theme=pack] .orbit-brand-mark{color:#c3d1de}
+.orbit-dialog[data-theme=pack] .orbit-brand small{font-family:var(--sans);letter-spacing:.08em}
+.orbit-dialog[data-theme=pack] .orbit-footer{z-index:20;color:#a5b6c8;pointer-events:none}
+.orbit-dialog[data-theme=pack] .orbit-footer>span:last-child{color:#a5b6c8}
+.orbit-dialog[data-theme=pack] #orbit-canvas{z-index:12;pointer-events:none}
+.pack-scene{--pack-w:min(260px,54vw,calc((100dvh - 310px)*.66));position:absolute;inset:0;z-index:3;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:12px;padding:100px 24px 57px;overflow:hidden}
+.pack-prompt{text-align:center;position:relative;z-index:6;transition:opacity .2s,transform .3s;pointer-events:none}
+.pack-prompt h2{font-size:clamp(25px,3vw,36px);font-weight:800;letter-spacing:-.035em;line-height:1.25}
+.pack-prompt p{color:#b0c0cf;font-size:14px;line-height:1.6;margin-top:8px}
+.pack-carousel{position:relative;min-height:0;perspective:1100px;isolation:isolate}
+.pack-ground{position:absolute;width:min(680px,90vw);height:45px;left:50%;top:93%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse,#0008,transparent 68%);pointer-events:none}
+.pack-deck{position:absolute;inset:0;transform:translateX(var(--drag,0px));transition:transform .16s ease-out;touch-action:pan-y;perspective:1100px}
+.pack-item{--tilt-x:0deg;--tilt-y:0deg;position:absolute;left:50%;top:50%;width:var(--pack-w);height:calc(var(--pack-w)*1.48);padding:0;border:0;border-radius:0;background:transparent;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.16,1,.3,1),opacity .4s,filter .4s;cursor:pointer;outline-offset:12px;user-select:none;-webkit-user-select:none}
+.pack-item[data-position=center]{z-index:4;transform:translate(-50%,-50%) rotateY(var(--tilt-y)) rotateX(var(--tilt-x)) rotate(-3deg)}
+.pack-item[data-position=left]{z-index:2;transform:translate(-168%,-44%) translateZ(-120px) rotateY(30deg) rotate(-12deg) scale(.82);filter:brightness(.72);opacity:.9}
+.pack-item[data-position=right]{z-index:2;transform:translate(68%,-44%) translateZ(-120px) rotateY(-30deg) rotate(12deg) scale(.82);filter:brightness(.72);opacity:.9}
+.pack-item[data-position=left]:hover,.pack-item[data-position=right]:hover{filter:brightness(.94)}
+.pack-item:focus-visible{outline:2px solid #e5edff}
+.pack-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:8;width:48px;height:48px;border-radius:50%;border:1px solid #738397;background:#192430e8;color:#e9eff5;display:grid;place-items:center;transition:background .2s}
+.pack-nav:hover{background:#34475d}.pack-nav svg{width:22px;height:22px;stroke-width:1.8}
+.pack-prev{left:max(0px,calc(50% - 470px))}.pack-next{right:max(0px,calc(50% - 470px))}
+.pack-controls{position:relative;z-index:8;text-align:center;transition:opacity .2s,transform .3s}
+.pack-position{display:flex;align-items:center;justify-content:center;gap:14px;color:#d0dce5;font-size:12px;font-weight:600;margin-bottom:12px}
+.pack-dots{display:flex;gap:5px}.pack-dots i{width:5px;height:5px;border-radius:50%;background:#5c6c7b;transition:background .2s,transform .2s}.pack-dots i.selected{background:#e0e8ef;transform:scale(1.3)}
+.pack-open{display:inline-flex;align-items:center;justify-content:center;gap:35px;min-height:50px;min-width:210px;padding:12px 26px;background:#e2e9f0;color:#182533;border:1px solid #f9faf8;border-radius:5px;font-weight:800;font-size:16px;box-shadow:0 6px 16px #0003}
+.pack-open:hover{background:#fff}.pack-open svg{width:18px;height:18px}
+.pack-controls>p{color:#9fb1c1;font-size:12px;margin-top:11px}
+.pack-flash{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 44%,#e4efff88 0%,#86adfa22 26%,transparent 65%);pointer-events:none;opacity:0;z-index:9}
+
+/* One opening sequence: tension, torn seam, foil release, then the card. */
+.orbit-dialog[data-theme=pack]:not([data-pack-state=choose]) .pack-prompt,.orbit-dialog[data-theme=pack]:not([data-pack-state=choose]) .pack-controls,.orbit-dialog[data-theme=pack]:not([data-pack-state=choose]) .pack-nav{opacity:0;pointer-events:none;transform:translateY(8px)}
+.orbit-dialog[data-theme=pack]:not([data-pack-state=choose]) .pack-item:not([data-position=center]){opacity:0;transform:translate(-50%,-40%) translateZ(-300px) scale(.5);pointer-events:none}
+.orbit-dialog[data-theme=pack]:not([data-pack-state=choose]) .pack-item[data-position=center]{opacity:1;filter:none;transform:translate(-50%,-50%) rotateY(0deg) rotate(0deg) scale(1.08);cursor:default}
+.orbit-dialog[data-theme=pack]:not([data-pack-state=choose]) .pack-item[data-position=center] .pack-tear{animation:pack-tear calc(var(--pack-time)*1.2) cubic-bezier(.3,.1,.24,1) forwards}
+.orbit-dialog[data-theme=pack]:not([data-pack-state=choose]) .pack-item[data-position=center] .pack-cut{animation:pack-cut calc(var(--pack-time)*.52) linear calc(var(--pack-time)*.3) both}
+.orbit-dialog[data-theme=pack]:not([data-pack-state=choose]) .pack-item[data-position=center] .pack-sleeve{animation:pack-shed calc(var(--pack-time)*1.6) cubic-bezier(.5,0,.7,.5) calc(var(--pack-time)*.72) both}
+.orbit-dialog[data-theme=pack]:not([data-pack-state=choose]) .pack-item[data-position=center] .pack-reflection{animation:pack-glint calc(var(--pack-time)*.85) ease-out forwards}
+.orbit-dialog[data-theme=pack][data-pack-state=reveal] .pack-flash{animation:pack-flash calc(var(--pack-time)*.6) ease-out both}
+.orbit-dialog[data-theme=pack][data-pack-state=ready] .pack-scene{visibility:hidden}
+.pack-card-back{position:absolute;z-index:2;top:52%;left:50%;width:min(380px,calc(100% - 44px));max-height:calc(100dvh - 140px);padding:25px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;border:5px solid #bccbd8;border-radius:14px;background:linear-gradient(135deg,#183652,#2e5280);color:#dce9f6;box-shadow:6px 15px 30px #0005;opacity:0;transform:translate(-50%,-10%) scale(.6);backface-visibility:hidden;pointer-events:none}
+.pack-card-back>svg{position:absolute;top:0;right:-10%;width:100%;height:80%;stroke:none;opacity:.18;transform:rotate(-12deg)}
+.pack-card-back>span{font:800 10px var(--sans);letter-spacing:.1em}.pack-card-back>strong{font:800 78px/.84 PackDisplay,var(--sans);position:relative;letter-spacing:-.02em}.pack-card-back>small{font:600 13px var(--sans);position:relative}
+.orbit-dialog[data-theme=pack][data-pack-state=opening] .pack-card-back,.orbit-dialog[data-theme=pack][data-pack-state=reveal] .pack-card-back{animation:pack-card-back calc(var(--pack-time)*1.3) ease-out calc(var(--pack-time)*.3) both}
+.orbit-dialog[data-theme=pack][data-pack-state=reveal]::before{animation:pack-impact calc(var(--pack-time)*.3) ease-out both}
+@keyframes pack-card-back{0%{opacity:0;transform:translate(-50%,-8%) scale(.6) rotate(-2deg)}10%{opacity:1}45%{opacity:1;transform:translate(-50%,-60%) scale(.88) rotate(7deg) rotateY(-10deg)}100%{opacity:0;transform:translate(-50%,-60%) scale(.95) rotate(-3deg) rotateY(-100deg)}}
+@keyframes pack-impact{0%,100%{transform:translate(0,0)}20%{transform:translate(-4px,3px)}40%{transform:translate(4px,-2px)}65%{transform:translate(-2px,1px)}}
+@keyframes pack-tear{0%,22%{transform:translate(0,0) rotate(0)}36%{transform:translate(-1%,-2%) rotate(-2deg)}50%{transform:translate(8%,-10%) rotate(7deg)}70%{transform:translate(45%,-90%) rotate(30deg)}100%{transform:translate(165%,-220%) rotate(80deg);opacity:0}}
+@keyframes pack-cut{0%{clip-path:inset(0 100% 0 0)}90%{clip-path:inset(0 0 0 0);opacity:1}100%{clip-path:inset(0);opacity:0}}
+@keyframes pack-shed{0%{transform:translateY(0);clip-path:polygon(0 14%,5% 13%,10% 15%,18% 13%,25% 15%,32% 13%,40% 14%,48% 13%,56% 15%,65% 13%,74% 15%,82% 13%,90% 15%,100% 13%,100% 100%,0 100%)}30%{transform:translate(1%,15%) rotate(3deg);opacity:1}100%{transform:translate(12%,145%) rotate(18deg) scale(.65);opacity:0}}
+@keyframes pack-glint{0%{opacity:.22;background-position:100% 50%}45%{opacity:.7}100%{opacity:0;background-position:0% 50%}}
+@keyframes pack-flash{0%{opacity:0}20%{opacity:.85}100%{opacity:0}}
+
+/* The actual task is printed on the revealed trading card, including its actions. */
+.orbit-dialog[data-theme=pack] .orbit-result{--card-ink:#14283b;--card-accent:#224fe4;--card-metal:#c4d0da;position:absolute;z-index:10;top:52%;left:50%;width:min(380px,calc(100% - 44px));max-height:calc(100dvh - 140px);overflow:auto;padding:15px 20px 18px;border:2px solid #e2e9ef;border-radius:15px;background:linear-gradient(132deg,#d4dde5 0%,#f8f8f1 22%,#c6d1dc 49%,#f3f5ed 72%,#c0cbd5 100%);box-shadow:2px 3px 0 #70818e,5px 6px 0 #263d51,12px 25px 55px #0008;color:var(--card-ink);opacity:0;visibility:hidden;transform:translate(-50%,-30%) rotateY(150deg) rotate(8deg) scale(.6);transition:none;backface-visibility:hidden;text-align:left;scrollbar-width:thin;scrollbar-color:#50697a #d3dde2;isolation:isolate}
+.orbit-dialog[data-theme=pack][data-pack-metal=copper] .orbit-result{--card-accent:#8d442c;--card-metal:#dac3ac}
+.orbit-dialog[data-theme=pack][data-pack-metal=cobalt] .orbit-result{--card-accent:#224fe4;--card-metal:#b3c5eb}
+.orbit-dialog[data-theme=pack] .orbit-result:before{content:"";position:absolute;inset:7px;border:1px solid #6d879b80;border-radius:9px;z-index:-1;pointer-events:none}
+.orbit-dialog[data-theme=pack][data-pack-state=reveal] .orbit-result{visibility:visible;animation:pack-card-reveal calc(var(--pack-time)*1.65) cubic-bezier(.16,1,.3,1) both}
+.orbit-dialog[data-theme=pack][data-pack-state=ready] .orbit-result{opacity:1;visibility:visible;transform:translate(-50%,-50%) rotate(-1deg) scale(1)}
+@keyframes pack-card-reveal{0%{opacity:0;transform:translate(-50%,-12%) rotateY(150deg) rotate(12deg) scale(.6)}12%{opacity:1}43%{transform:translate(-50%,-60%) rotateY(-14deg) rotate(-4deg) scale(1.05)}61%{transform:translate(-50%,-47%) rotateY(4deg) rotate(1.5deg) scale(.99)}100%{opacity:1;transform:translate(-50%,-50%) rotateY(0) rotate(-1deg) scale(1)}}
+.pack-card-top{display:flex;justify-content:space-between;gap:12px;font:800 9px var(--sans);letter-spacing:.06em;margin-bottom:12px;color:#3b5264}
+.pack-card-art{position:relative;height:clamp(95px,20dvh,170px);overflow:hidden;border-radius:6px;background:linear-gradient(135deg,#152b45,#3c5c80);color:#edf4f8;padding:14px 17px;isolation:isolate}
+.pack-card-art:after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,#d9e5ff25 42%,transparent 55%);pointer-events:none}
+.pack-card-art>span{font:700 9px var(--sans);letter-spacing:.12em;display:block;position:relative;z-index:2}
+.pack-card-art>b{font:800 clamp(54px,10dvh,88px)/1 PackDisplay,var(--sans);letter-spacing:-.02em;position:absolute;bottom:4px;left:16px}
+.pack-card-medal{position:absolute;right:-6%;top:-27%;width:78%;aspect-ratio:1;transform:rotate(-14deg);color:#b5cbe0}
+.pack-card-medal svg{height:100%;width:100%;stroke:none;filter:drop-shadow(5px 8px 2px #071e3f77)}
+.orbit-dialog[data-theme=pack] .orbit-result-kicker{font:700 12px var(--sans);letter-spacing:0;color:var(--card-accent);text-shadow:none;margin:19px 0 8px}
+.orbit-dialog[data-theme=pack] .orbit-result h2{font:800 clamp(23px,3vw,30px)/1.32 var(--sans);color:var(--card-ink);letter-spacing:-.035em;text-shadow:none;overflow-wrap:anywhere;text-wrap:balance}
+.orbit-dialog[data-theme=pack] .orbit-result-copy{font-size:12px;line-height:1.6;margin-top:12px;color:#3d5464}
+.orbit-dialog[data-theme=pack] .orbit-result-actions{display:flex;flex-direction:column;gap:8px;margin-top:20px;transform:none}
+.orbit-dialog[data-theme=pack] .orbit-start,.orbit-dialog[data-theme=pack] .orbit-reroll{width:100%;min-height:45px;border-radius:5px;padding:10px 14px;font:700 14px var(--sans);letter-spacing:0;box-shadow:none;text-shadow:none}
+.orbit-dialog[data-theme=pack] .orbit-start{background:var(--card-accent);color:#fff;border:1px solid var(--card-accent)}
+.orbit-dialog[data-theme=pack] .orbit-start:hover{filter:brightness(1.12);transform:none;box-shadow:0 4px 12px #172f6340}
+.orbit-dialog[data-theme=pack] .orbit-reroll{background:#f3f6f366;border:1px solid #73899b;color:#243d50}
+.orbit-dialog[data-theme=pack] .orbit-reroll:hover{background:#fff9}
+.orbit-dialog[data-theme=pack] .orbit-result-note{margin-top:12px;font:11px/1.5 var(--sans);color:#3e5566;text-align:center}
+.orbit-dialog[data-theme=pack] button:focus-visible{outline:3px solid #f4b76b;outline-offset:4px}
+
+/* A quiet version of the same card remains during focus. */
+.focus-dialog[data-theme=pack]{background:#131e2b;color:#edf3f8}
+.focus-dialog[data-theme=pack] .focus-universe{background:radial-gradient(ellipse at 50% 45%,#304c6d,#131e2b 75%)}
+.focus-dialog[data-theme=pack] .focus-universe-stars,.focus-dialog[data-theme=pack] .focus-orbit-ring,.focus-dialog[data-theme=pack] .focus-universe-planet,.focus-dialog[data-theme=pack] .focus-mode-clock>svg{display:none}
+.focus-dialog[data-theme=pack] .focus-mode-kicker,.focus-dialog[data-theme=pack] .focus-mode-header .eyebrow{color:#beccda}
+.focus-dialog[data-theme=pack] #focus-mode-title,.focus-dialog[data-theme=pack] #focus-mode-task{color:#f2f5f0}
+.focus-dialog[data-theme=pack].orbit-focus .focus-mode-clock{border-radius:14px;border:2px solid #e4ebee;background:linear-gradient(135deg,#d6e0e7,#f2f4eb 40%,#b7c8d9);box-shadow:3px 4px 0 #6b8499,12px 20px 42px #07111a77;width:310px;height:270px;padding:25px;max-width:100%;isolation:isolate}
+.focus-dialog[data-theme=pack] .focus-mode-clock:before{content:"";position:absolute;inset:8px;border:1px solid #56718a80;border-radius:7px;pointer-events:none}
+.focus-dialog[data-theme=pack].orbit-focus .focus-mode-clock .mono{color:#1b344c;font-weight:700;font-size:76px;letter-spacing:-.035em;text-shadow:none}
+.focus-dialog[data-theme=pack].orbit-focus .focus-mode-clock .mono.long-time{font-size:49px}
+.focus-dialog[data-theme=pack].orbit-focus .focus-mode-clock .timer-phase,.focus-dialog[data-theme=pack].orbit-focus .focus-mode-clock #focus-mode-state,.focus-dialog[data-theme=pack].orbit-focus .focus-mode-clock .focus-mode-total{color:#3a5368;letter-spacing:0;font-family:var(--sans)}
+.focus-dialog[data-theme=pack] .focus-mode-content>#focus-mode-toggle{background:#d9e5f1;color:#19344e;border:1px solid #edf3f7;box-shadow:none}
+.focus-dialog[data-theme=pack] .focus-mode-content>#focus-mode-toggle:hover{background:#f4f8fc;color:#19344e}
+.focus-dialog[data-theme=pack] .focus-back,.focus-dialog[data-theme=pack] .focus-mode-secondary .button{background:#172839;color:#dbe7ed;border-color:#6c859a}
+.focus-dialog[data-theme=pack] .focus-mode-note{color:#bacbd8}
+.focus-dialog[data-theme=pack] .focus-context-note{background:#24394b!important;border-color:#9db6cc!important}
+.focus-dialog[data-theme=pack] .focus-context-note p,.focus-dialog[data-theme=pack] .focus-context-note span{color:#e3ecf1}
+
+/* Gallery specimen — the same printed foil, at thumbnail scale. */
+.effects-dialog .pack-art{position:relative;overflow:hidden;background:#15202c;height:140px;min-height:140px}
+.pack-mini{position:absolute;top:20px;left:50%;width:79px;height:120px;transform:translateX(-50%) rotate(-5deg);z-index:2}
+.pack-mini:first-child{transform:translateX(-125%) translateY(10px) rotate(-18deg);z-index:1}
+.pack-mini:last-child{transform:translateX(25%) translateY(10px) rotate(18deg);z-index:1}
+.pack-mini .pack-wordmark{font-size:27px;margin-top:10%}.pack-mini .pack-maker{font-size:3px}.pack-mini .pack-edition{font-size:3px}.pack-mini .pack-bottomline{font-size:3px}.pack-mini .pack-bottomline>b{font-size:4px}.pack-mini .pack-tear-copy{font-size:3px}.pack-mini .pack-foil{filter:drop-shadow(3px 4px 5px #0006)}
+@media(max-width:560px){.pack-scene{padding:100px 12px 53px;gap:9px}.pack-prompt h2{font-size:27px}.pack-prompt p{font-size:12px}.pack-nav{width:42px;height:42px;top:52%}.pack-prev{left:3px}.pack-next{right:3px}.pack-item[data-position=left]{transform:translate(-145%,-42%) translateZ(-110px) rotateY(33deg) rotate(-13deg) scale(.78)}.pack-item[data-position=right]{transform:translate(45%,-42%) translateZ(-110px) rotateY(-33deg) rotate(13deg) scale(.78)}.pack-wordmark{font-size:clamp(45px,15vw,68px)}.pack-edition{font-size:8px}.pack-maker{font-size:7px}.pack-bottomline>b{font-size:11px}.pack-controls>p{font-size:11px}.orbit-dialog[data-theme=pack] .orbit-result{top:52%;max-height:calc(100dvh - 145px)}.pack-card-art{height:125px}}
+@media(max-height:680px){.pack-scene{--pack-w:min(200px,46vw,calc((100dvh - 250px)*.62));padding-top:78px;padding-bottom:40px;gap:8px}.pack-prompt h2{font-size:24px}.pack-prompt p{margin-top:4px;font-size:12px}.pack-controls>p{display:none}.pack-position{margin-bottom:8px}.pack-open{min-height:44px;font-size:14px}.pack-wordmark{font-size:58px}.orbit-dialog[data-theme=pack] .orbit-result{max-height:calc(100dvh - 115px);top:52%;padding:12px 18px 14px}.pack-card-art{height:90px}.pack-card-art>b{font-size:60px}.orbit-dialog[data-theme=pack] .orbit-result-kicker{margin-top:12px}.orbit-dialog[data-theme=pack] .orbit-result-actions{margin-top:14px}.orbit-dialog[data-theme=pack] .orbit-result-copy{margin-top:8px}.focus-dialog[data-theme=pack].orbit-focus .focus-mode-clock{height:225px;width:280px}}
+@media(max-height:480px) and (min-width:600px){.pack-scene{--pack-w:min(190px,calc((100dvh - 150px)*.62));padding:67px 100px 32px;grid-template-columns:1fr 230px;grid-template-rows:auto 1fr}.pack-prompt{grid-column:2;align-self:end}.pack-carousel{grid-column:1;grid-row:1 / 3}.pack-controls{grid-column:2;align-self:start;margin-top:15px}.pack-prompt p{max-width:180px;margin-inline:auto}.pack-nav{width:36px;height:36px}.pack-card-art{display:none}.orbit-dialog[data-theme=pack] .orbit-result{width:min(460px,70vw);max-height:calc(100dvh - 95px);top:53%}.pack-card-top{margin-bottom:5px}.orbit-dialog[data-theme=pack] .orbit-result-actions{flex-direction:row}.orbit-dialog[data-theme=pack] .orbit-result-copy{display:none}}
+@media(prefers-reduced-motion:reduce){.pack-item,.pack-deck,.pack-prompt,.pack-controls,.pack-dots i{transition:none!important}.orbit-dialog[data-theme=pack] .orbit-result{animation:none!important}.orbit-dialog[data-theme=pack][data-pack-state=ready] .orbit-result{transform:translate(-50%,-50%)}.pack-flash{display:none}}
