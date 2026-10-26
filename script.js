@@ -111,7 +111,7 @@
     $('data-hint').textContent = state.sample ? '예시 할 일이 담겨 있어요. 내 할 일로 바꿔보세요.' : '머릿속 목록을 여기 내려놓고, 다음 선택은 맡겨요.';
     updateLock();
   }
-  function renderDecision(tieCount) {
+  function renderDecision(tieCount, { reveal = false } = {}) {
     const selected = selectedTask();
     $('decision-rest').hidden = Boolean(selected);
     $('decision-result').hidden = !selected;
@@ -121,8 +121,15 @@
     $('quick-start').hidden = Boolean(selected);
     if (selected) {
       $('result-title').textContent = selected.title;
+      $('result-category').textContent = categoryNames[selected.category];
+      $('result-due').textContent = E.dueLabel(selected);
+      $('result-effort').textContent = `예상 ${selected.effort}분`;
+      if (reveal) $('result-details').open = false;
       const candidates = state.tasks.filter(task => task.id !== state.selectionExcludedId);
       $('result-reason').textContent = (state.selectionExcludedId ? '방금 나온 일을 빼고 남은 우선순위에서 골랐어요. ' : '') + E.reason(selected, candidates, E.localDate(), tieCount);
+      const reason = E.reason(selected, candidates, E.localDate(), tieCount);
+      const dueDays = E.dayDifference(selected.due);
+      $('result-summary').textContent = reason.startsWith('앞서') ? '앞서 고른 일이에요. 지금은 이것 하나에만.' : dueDays !== null && dueDays < 0 ? '늦어진 일부터 하나씩 정리해봐요.' : dueDays === 0 ? '오늘 마감이라 먼저 골랐어요.' : dueDays !== null && dueDays <= 3 ? '마감이 가까워 먼저 골랐어요.' : '중요도와 미뤄둔 시간을 함께 살폈어요.';
       $('resume-note').hidden = !selected.progressNote;
       $('resume-note-text').textContent = selected.progressNote || '';
       document.querySelector('.workbench').classList.add('has-selection');
@@ -137,10 +144,11 @@
       title.replaceChildren();
       title.append(document.createTextNode(!pending.length && hasDone ? '오늘 목록을' : possible.length ? '이번엔' : pending.length ? '잠시 쉬어도' : '할 일을'), document.createElement('br'), document.createTextNode(!pending.length && hasDone ? '모두 끝냈어요!' : possible.length ? '우리가 고를게요.' : pending.length ? '괜찮아요.' : '하나 적어봐요.'));
       $('decision-rest').querySelector('.machine-small').textContent = pending.length && !possible.length ? '다시 가능한 일은 목록에서 ‘오늘 다시 하기’를 눌러요.' : !pending.length && hasDone ? '작은 시작이 모여 여기까지. 잘 마무리했어요.' : '버튼 한 번이면, 지금 할 일 하나.';
-      $('pick-button').textContent = '지금 할 일 정해줘 ✳';
+      $('pick-button').textContent = '지금 할 일 뽑기';
       $('timer-caption').textContent = '할 일이 정해지면 5분만 같이 해봐요.';
     }
     updateLock(); renderTimer();
+    window.RescuePaper?.render(selected ? 'result' : 'rest', reveal);
   }
   function updateLock() {
     const selected = Boolean(selectedTask());
@@ -199,7 +207,7 @@
     $('focus-mode-total').textContent = totalText;
     $('focus-mode-clock').setAttribute('aria-label', view.overtime ? '추가 집중 시간' : '처음 5분 남은 시간');
     $('focus-mode-toggle').textContent = $('timer-button').textContent;
-    if (selectedTask()) $('pick-button').textContent = running ? '집중 화면 보기 ↗' : started ? '이 일 이어서 시작하기 ▶' : '▶ 바로 5분 시작';
+    if (selectedTask()) $('pick-button').textContent = running ? '집중 화면 보기' : started ? '이어서 시작하기' : '일단 5분 시작';
   }
   function tick() {
     accountFocus();
@@ -269,6 +277,7 @@
       const message = excludeId ? '지금 할 수 있는 다른 일이 없어요.' : '할 일을 추가하거나, 잠시 제외한 일을 다시 포함해 주세요.';
       toast(message); announce(message); return;
     }
+    window.RescuePaper?.render('picking');
     choosing = true; updateLock(); resetFocus();
     state.selectedId = null; state.selectionExcludedId = excludeId;
     $('decision-rest').hidden = true; $('decision-result').hidden = true; $('reel').hidden = false;
@@ -292,7 +301,7 @@
       finishPick = null;
       state.selectedId = selection.task.id; choosing = false;
       if ($('orbit-dialog').open && !orbitPreview) $('orbit-title').textContent = selection.task.title;
-      save(); renderTasks(); renderDecision(selection.tied); renderPlan();
+      save(); renderTasks(); renderDecision(selection.tied, { reveal: !autoStart }); renderPlan();
       document.querySelector('.decision-panel').scrollIntoView({ behavior: reducedMotion.matches ? 'instant' : 'smooth', block: 'start' });
       announce(`지금 할 일은 ${selection.task.title}. ${E.reason(selection.task, candidates, E.localDate(), selection.tied)}${selection.task.progressNote ? ' 지난 메모: ' + selection.task.progressNote : ''}`);
       if (autoStart) startFromResult();
@@ -415,6 +424,7 @@
     if (stopOrbit) { stopOrbit(); stopOrbit = null; }
     if (!orbitPreview && finishPick) finishPick();
     document.body.classList.remove('orbit-open');
+    window.RescuePaper?.flush();
   }
   function previewOrbit(theme = 'capsule', excludeTitle = null) {
     closePreview();
@@ -562,6 +572,7 @@
       const heading = $(nextSurface === 'start' ? 'workspace-title' : nextSurface === 'intro' ? 'why-title' : 'hero-title');
       if (moveFocus) { heading.setAttribute('tabindex', '-1'); heading.focus({preventScroll:true}); }
       if (changed || moveFocus) window.scrollTo({top:0,left:0,behavior:'instant'});
+      window.RescuePaper?.flush();
     });
   }
   document.querySelectorAll('a[data-route]').forEach(link => link.addEventListener('click', event => {
@@ -634,7 +645,7 @@
   $('pause-today-button').addEventListener('click', openProgressNote);
   $('open-focus').addEventListener('click', openFocusMode);
   $('close-focus').addEventListener('click', closeFocusMode);
-  $('focus-dialog').addEventListener('close', () => document.body.classList.remove('focus-mode-open'));
+  $('focus-dialog').addEventListener('close', () => { document.body.classList.remove('focus-mode-open'); window.RescuePaper?.flush(); });
   $('focus-mode-toggle').addEventListener('click', timerToggle);
   $('focus-mode-reroll').addEventListener('click', () => {
     const task = selectedTask(); if (!task || choosing) return;
