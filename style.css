@@ -248,3 +248,7 @@ body[data-view=start] .workspace-section{min-height:calc(100dvh - var(--site-hea
 .focus-mode-secondary{flex-wrap:wrap}
 .focus-mode-secondary .button{flex:0 1 auto}
 .focus-mode-feedback{max-width:480px;margin:16px auto 0;font-size:14px;line-height:1.6;color:inherit}
+
+body[data-view=intro] .why-section{padding-top:64px}
+#why-title{outline:none}
+@media(max-width:600px){body[data-view=intro] .why-section{padding-top:36px}}

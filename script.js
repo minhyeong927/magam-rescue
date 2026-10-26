@@ -542,28 +542,26 @@
   function showRoute(moveFocus = true) {
     cancelAnimationFrame(routeFrame);
     const hash = location.hash || '#home';
-    const nextSurface = hash === '#start' || hash === '#workspace' ? 'start' : 'home';
+    const nextSurface = ['#start','#workspace'].includes(hash) ? 'start' : ['#why','#how','#about'].includes(hash) ? 'intro' : 'home';
     const changed = nextSurface !== currentSurface;
     if (moveFocus) {
       galleryReturnControl = null;
       document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
     }
-    document.querySelectorAll('[data-surface]').forEach(surface => { surface.hidden = surface.dataset.surface !== nextSurface; });
+    document.querySelectorAll('[data-surface]').forEach(surface => { surface.hidden = !surface.dataset.surface.split(' ').includes(nextSurface); });
     document.body.dataset.view = nextSurface;
-    document.title = nextSurface === 'start' ? '지금 할 일 — 마감구조대' : '마감구조대 — 고민은 여기까지. 지금은, 딱 하나.';
+    document.title = nextSurface === 'start' ? '지금 할 일 — 마감구조대' : nextSurface === 'intro' ? '서비스 소개 — 마감구조대' : '마감구조대 — 고민은 여기까지. 지금은, 딱 하나.';
     document.querySelectorAll('.nav-cta,.mobile-start').forEach(link => {
       if (nextSurface === 'start') link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
     });
     const intro = document.querySelector('.nav-intro');
-    if (hash === '#why' || hash === '#how') intro.setAttribute('aria-current', 'location'); else intro.removeAttribute('aria-current');
+    if (nextSurface === 'intro') intro.setAttribute('aria-current', 'page'); else intro.removeAttribute('aria-current');
     currentSurface = nextSurface;
     setMenu(false);
     routeFrame = requestAnimationFrame(() => {
-      const anchor = nextSurface === 'home' && ['#why','#how'].includes(hash) ? document.getElementById(hash.slice(1)) : null;
-      const heading = anchor?.querySelector('h2') || $(nextSurface === 'start' ? 'workspace-title' : 'hero-title');
+      const heading = $(nextSurface === 'start' ? 'workspace-title' : nextSurface === 'intro' ? 'why-title' : 'hero-title');
       if (moveFocus) { heading.setAttribute('tabindex', '-1'); heading.focus({preventScroll:true}); }
-      if (anchor) heading.scrollIntoView({behavior: reducedMotion.matches ? 'instant' : 'smooth',block:'start'});
-      else if (changed || moveFocus) window.scrollTo({top:0,left:0,behavior:'instant'});
+      if (changed || moveFocus) window.scrollTo({top:0,left:0,behavior:'instant'});
     });
   }
   document.querySelectorAll('a[data-route]').forEach(link => link.addEventListener('click', event => {
