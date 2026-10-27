@@ -25,7 +25,7 @@
   function rad(c, x, y, r0, r1, stops) {
     const g = c.createRadialGradient(x, y, r0, x, y, r1); stops.forEach(([o, col]) => g.addColorStop(o, col)); return g;
   }
-  const brass = (c, x0, y0, x1, y1) => lin(c, x0, y0, x1, y1, [[0, '#6a4917'], [.22, '#d8b25e'], [.42, '#f6e2a3'], [.62, '#a57b33'], [1, '#664616']]);
+  const brass = (c, x0, y0, x1, y1) => lin(c, x0, y0, x1, y1, [[0, '#63594b'], [.22, '#b6a489'], [.42, '#e8dcc5'], [.62, '#998972'], [1, '#5e5344']]);
   const chrome = (c, x0, y0, x1, y1) => lin(c, x0, y0, x1, y1, [[0, '#5b5b58'], [.2, '#f3f1ea'], [.45, '#9c9a93'], [.7, '#fbfaf4'], [1, '#62615c']]);
 
   /* ---------- 릴 그림 (직접 그린 오리지널 도안): 체리·레몬·포도·수박·종·7 ---------- */
@@ -138,17 +138,16 @@
     const phaseEl = document.getElementById('orbit-phase'), telemetry = document.getElementById('orbit-coordinates');
     const list = (titles && titles.length ? titles : ['지금 할 일']).slice();
     const prize = winner || list[0];
-    let lastMeasure = -1, w = 0, h = 0, raf = null, stopped = false, ready = false, audio = null, phase = -1, lastNow = 0, coinTick = 0, carpet = null, ledTile = null;
+    let lastMeasure = -1, w = 0, h = 0, raf = null, stopped = false, ready = false, audio = null, phase = -1, lastNow = 0, coinTick = 0, ledTile = null;
     const start = performance.now();
     const seed = Math.random() * 1000, rnd = i => { const x = Math.sin(i * 127.1 + seed) * 43758.5453; return x - Math.floor(x); };
-    const ART = getSprites(), SP = ART.reel, STAR = ART.star;
+    const SP = getSprites().reel;
 
     const target = Math.floor(rnd(9) * SEVEN); // 이번에 맞출 그림: 7은 제외한 과일·종 중 하나
     const reels = [0, 1, 2].map(k => {
       const p0 = Math.floor(rnd(k + 5) * N), D = N * (3 + k * 1) + ((target - p0 % N + N) % N);
       return { p0, D, ts: TS + k * .012, te: STOPS[k], p: p0, spd: 0, lastIdx: p0, stopped: false };
     });
-    const coins = []; let coinsMade = 0;
 
     /* ----- 소리: 선택 사항, 기본은 꺼짐 ----- */
     if (sound && !reduced) { try { audio = new (window.AudioContext || window.webkitAudioContext)(); audio.resume().catch(() => {}); } catch (_) { audio = null; } }
@@ -162,22 +161,13 @@
       } catch (_) { /* 소리가 없어도 연출은 그대로 재생됩니다. */ }
     }
 
-    const captions = ['레버를 당기는 중', '릴이 돌아가는 중', '마지막 릴이 멈추는 중', '잭팟. 오늘의 한 가지.'];
+    const captions = ['레버를 당기는 중', '릴이 돌아가는 중', '마지막 릴이 멈추는 중', '딱 하나, 정해졌어요.'];
     function setPhase(n) {
       if (n === phase) return; phase = n; dialog.dataset.phase = String(n); phaseEl.textContent = captions[n];
       if (n === 0) tone(90, .16, .05, 'triangle');
-      if (n === 3) [784, 988, 1175, 1568].forEach((f, i) => tone(f, .55, .045, 'sine', i * .09, .8));
+      if (n === 3) [660, 880].forEach((f, i) => tone(f, .22, .025, 'sine', i * .07, .8));
     }
 
-    /* ----- 반복 배경 무늬 ----- */
-    function makeCarpet() {
-      const cv = document.createElement('canvas'); cv.width = cv.height = 64; const g = cv.getContext('2d');
-      g.strokeStyle = 'rgba(240,190,110,.07)'; g.lineWidth = 1.4;
-      g.beginPath(); g.moveTo(32, 3); g.lineTo(61, 32); g.lineTo(32, 61); g.lineTo(3, 32); g.closePath(); g.stroke();
-      g.beginPath(); g.moveTo(32, 20); g.lineTo(44, 32); g.lineTo(32, 44); g.lineTo(20, 32); g.closePath(); g.stroke();
-      g.fillStyle = 'rgba(240,190,110,.08)'; [[0, 0], [64, 0], [0, 64], [64, 64]].forEach(([x, y]) => { g.beginPath(); g.arc(x, y, 3, 0, TAU); g.fill(); });
-      return c.createPattern(cv, 'repeat');
-    }
     function makeLed() {
       const cv = document.createElement('canvas'); cv.width = cv.height = 4; const g = cv.getContext('2d');
       g.fillStyle = 'rgba(8,3,2,.62)'; g.fillRect(3, 0, 1, 4); g.fillRect(0, 3, 4, 1); return c.createPattern(cv, 'repeat');
@@ -186,7 +176,7 @@
     function resize() {
       w = canvas.clientWidth; h = canvas.clientHeight;
       const d = Math.min(devicePixelRatio || 1, 1.7); canvas.width = Math.round(w * d); canvas.height = Math.round(h * d);
-      if (c) { c.setTransform(d, 0, 0, d, 0, 0); carpet = makeCarpet(); ledTile = makeLed(); }
+      if (c) { c.setTransform(d, 0, 0, d, 0, 0); ledTile = makeLed(); }
       measureTicket(); if (ready && stopped === false && raf === null) draw(performance.now());
     }
 
@@ -217,20 +207,15 @@
       return { s, x: w / 2 - MID * s, y: top, q, ticketTop: Math.round(84 + MH * sWin + 14 + ticketH / 2) };
     }
     function background(t, L, glow) {
-      c.fillStyle = '#150909'; c.fillRect(0, 0, w, h);
-      c.fillStyle = carpet; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#171315'; c.fillRect(0, 0, w, h);
       const cx = w / 2, cy = L.y + MH * L.s * .42;
-      c.fillStyle = rad(c, cx, cy, 10, Math.max(w, h) * .75, [[0, `rgba(150,56,34,${.55 + glow * .25})`], [.45, 'rgba(70,20,18,.35)'], [1, 'rgba(8,3,3,.9)']]); c.fillRect(0, 0, w, h);
-      if (glow > 0) { // 당첨 순간에 퍼지는 햇살 무늬
-        c.save(); c.translate(cx, cy); c.rotate(t * .5); c.globalAlpha = glow * .11; c.fillStyle = '#f4c66a';
-        const R = Math.max(w, h);
-        for (let i = 0; i < 18; i++) { c.rotate(TAU / 18); c.beginPath(); c.moveTo(0, 0); c.lineTo(R, -R * .05); c.lineTo(R, R * .05); c.closePath(); c.fill(); }
-        c.restore();
-      }
+      c.fillStyle = rad(c, cx, cy, 0, Math.max(w, h) * .7,
+        [[0, '#39252a'], [.5, '#21191d'], [1, '#121113']]);
+      c.fillRect(0, 0, w, h);
     }
     function bulb(x, y, on, boost) {
       c.fillStyle = '#1a0d08'; c.beginPath(); c.arc(x, y, 8.5, 0, TAU); c.fill();
-      if (on) { c.fillStyle = rad(c, x, y, 0, 24, [[0, `rgba(255,190,80,${.5 + boost * .2})`], [1, 'rgba(255,150,40,0)']]); c.beginPath(); c.arc(x, y, 24, 0, TAU); c.fill(); }
+      if (on && boost > .1) { c.fillStyle = rad(c, x, y, 0, 24, [[0, `rgba(255,190,80,${.5 + boost * .2})`], [1, 'rgba(255,150,40,0)']]); c.beginPath(); c.arc(x, y, 24, 0, TAU); c.fill(); }
       c.fillStyle = on ? rad(c, x - 1.5, y - 1.5, .5, 7.5, [[0, '#fffbe2'], [.35, '#ffd56a'], [1, '#e08a1c']]) : rad(c, x - 1.5, y - 1.5, .5, 7.5, [[0, '#9b7a54'], [1, '#4a3322']]);
       c.beginPath(); c.arc(x, y, 6.6, 0, TAU); c.fill();
       c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(x - 2, y - 2.4, 1.8, 1.1, -.6, 0, TAU); c.fill();
@@ -254,14 +239,12 @@
       /* 상단 마퀴 */
       rr(c, -254, 16, 508, 118, 50); c.fillStyle = lin(c, 0, 16, 0, 134, [[0, '#2a050a'], [1, '#430c13']]); c.fill();
       c.lineWidth = 3; c.strokeStyle = brass(c, -254, 16, 254, 134); c.stroke();
-      c.save(); c.translate(-188, 74); c.scale(.26, .26); c.drawImage(STAR, -120, -120); c.restore();
-      c.save(); c.translate(188, 74); c.scale(.26, .26); c.drawImage(STAR, -120, -120); c.restore();
-      c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `800 44px ${SERIF}`;
-      if ('letterSpacing' in c) c.letterSpacing = '5px';
+      c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `700 36px ${SANS}`;
+      if ('letterSpacing' in c) c.letterSpacing = '1px';
       c.fillStyle = 'rgba(0,0,0,.55)'; c.fillText('마감구조대', 2, 78);
       c.fillStyle = lin(c, 0, 52, 0, 100, [[0, '#fff6d6'], [.5, '#f2d687'], [1, '#c99a46']]); c.fillText('마감구조대', 0, 74);
       if ('letterSpacing' in c) c.letterSpacing = '0px';
-      BULBS.forEach(([x, y], i) => bulb(x, y, st.bulbOn(i), st.win));
+      BULBS.filter((_, i) => i % 4 === 0).forEach(([x, y]) => bulb(x, y, true, 0));
 
       /* 미션 표시창: 점으로 이루어진 호박색 LED */
       rr(c, -234, 146, 468, 64, 11); c.fillStyle = brass(c, -234, 146, 234, 210); c.fill();
@@ -307,8 +290,8 @@
       c.strokeStyle = pay; c.lineWidth = 2.5; c.shadowColor = pay; c.shadowBlur = st.win > 0 ? 12 : 4; c.beginPath(); c.moveTo(-228, REEL_Y); c.lineTo(228, REEL_Y); c.stroke(); c.shadowBlur = 0;
       c.fillStyle = st.win > 0 ? '#ffd27a' : '#c99a46';
       [[-238, 1], [238, -1]].forEach(([x, d]) => { c.beginPath(); c.moveTo(x, REEL_Y - 13); c.lineTo(x + d * 17, REEL_Y); c.lineTo(x, REEL_Y + 13); c.closePath(); c.fill(); });
-      if (st.win > 0) { // 당첨 칸 둘레의 맥동
-        c.strokeStyle = `rgba(255,214,120,${.45 + .5 * st.pulse})`; c.lineWidth = 3.5;
+      if (st.win > 0) { // One short highlight, then a still result
+        c.strokeStyle = `rgba(255,214,120,${.3 + .5 * st.pulse})`; c.lineWidth = 3.5;
         for (let k = 0; k < 3; k++) { rr(c, -228 + k * 159 + 4, REEL_Y - 52, 134, 104, 8); c.stroke(); }
       }
       // 유리 반사
@@ -339,27 +322,6 @@
       c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.ellipse(px - br * .35, py - L - br * .4, br * .22, br * .13, -.6, 0, TAU); c.fill();
     }
 
-    function spawnCoins(L, n) {
-      const k = Math.max(.6, Math.min(w, h) / 760), ox = w / 2 - MID * L.s + 0 * L.s, oy = L.y + 534 * L.s;
-      for (let i = 0; i < n; i++) {
-        const j = coinsMade++;
-        coins.push({ x: ox + (rnd(j + 11) - .5) * 160 * L.s, y: oy, vx: (rnd(j + 31) - .5) * 1100 * k, vy: -(620 + rnd(j + 51) * 760) * k, r: (11 + rnd(j + 71) * 8) * k, ph: rnd(j + 91) * TAU, sp: 8 + rnd(j + 111) * 12 });
-      }
-    }
-    function drawCoins(dt, k) {
-      for (let i = coins.length - 1; i >= 0; i--) {
-        const q = coins[i]; q.vy += 2000 * k * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.ph += q.sp * dt;
-        if (q.y > h + 40) { coins.splice(i, 1); continue; }
-        const sx = Math.max(.14, Math.abs(Math.cos(q.ph)));
-        c.save(); c.translate(q.x, q.y); c.rotate(q.vx * .0004); c.scale(sx, 1);
-        c.fillStyle = '#8a5f1b'; c.beginPath(); c.arc(0, 1.5, q.r, 0, TAU); c.fill();
-        c.fillStyle = rad(c, -q.r * .3, -q.r * .3, 1, q.r * 1.1, [[0, '#fff0b0'], [.45, '#e8b94c'], [1, '#a9761f']]); c.beginPath(); c.arc(0, 0, q.r, 0, TAU); c.fill();
-        c.strokeStyle = '#7a5416'; c.lineWidth = Math.max(1, q.r * .12); c.stroke();
-        c.strokeStyle = '#a2751f'; c.lineWidth = Math.max(1, q.r * .14); c.beginPath(); for (let a = 0; a < 4; a++) { c.moveTo(0, 0); c.lineTo(Math.cos(a * Math.PI / 4) * q.r * .5, Math.sin(a * Math.PI / 4) * q.r * .5); c.moveTo(0, 0); c.lineTo(-Math.cos(a * Math.PI / 4) * q.r * .5, -Math.sin(a * Math.PI / 4) * q.r * .5); } c.stroke();
-        c.restore();
-      }
-    }
-
     function draw(now) {
       if (stopped) return;
       const dt = lastNow ? Math.min(.05, (now - lastNow) / 1000) : .016; lastNow = now;
@@ -370,12 +332,12 @@
       reels.forEach((r, k) => {
         const p = reduced ? r.p0 + r.D : reelAt(r, t); r.spd = Math.abs(p - r.p) / Math.max(dt, .001); r.p = p;
         const idx = Math.floor(p); if (idx !== r.lastIdx) { if (r.spd > 4 && now - coinTick > 38) { tone(2300 + k * 160, .012, .012, 'square', 0, .9); coinTick = now; } r.lastIdx = idx; }
-        if (!r.stopped && t >= r.te) { r.stopped = true; if (!reduced) tone(150 - k * 12, .16, .1, 'triangle'); }
+        if (!r.stopped && t >= r.te) { r.stopped = true; if (!reduced) { tone(150 - k * 12, .12, k === 2 ? .09 : .055, 'triangle'); tone(1700, .025, .025, 'square'); } }
       });
-      const winT = reduced ? 1 : clamp((t - STOPS[2]) / .06), winning = t >= STOPS[2];
+      const winning = t >= STOPS[2];
       if (Math.floor(now / 250) !== lastMeasure) { lastMeasure = Math.floor(now / 250); measureTicket(); }
       const L = layout(t), winSmooth = winning ? smooth((t - STOPS[2]) / .1) : 0;
-      const pulse = winning ? .5 + .5 * Math.sin(time * 9) : 0;
+      const pulse = winning ? Math.max(0, 1 - (t - STOPS[2]) / .16) : 0;
       const pull = reduced ? 0 : t < .02 ? 0 : t < .13 ? smooth((t - .02) / .11) : t < .27 ? 1 - smooth((t - .13) / .14) + Math.max(0, Math.sin((t - .13) * 90)) * .04 * (1 - (t - .13) / .14) : 0;
       const spinning = t >= TS && t < STOPS[2];
       const step = Math.floor(time * (spinning ? 18 : 7));
@@ -385,21 +347,14 @@
         displayOn: true,
         text: reduced || t >= STOPS[2] ? prize : t < TS ? '레버를 당겨요' : list[Math.floor(time * 15 + rnd(3) * 9) % list.length]
       };
-      if (winning && !reduced && t < STOPS[2] + .2) st.displayOn = Math.floor(time * 7) % 2 === 0 || t > STOPS[2] + .14;
 
       const topPx = L.ticketTop + 'px'; if (topPx !== lastTop) { lastTop = topPx; dialog.style.setProperty('--slot-ticket-top', topPx); }
       c.save(); c.clearRect(0, 0, w, h);
       background(t, L, winSmooth);
-      const shake = !reduced && t >= STOPS[2] && t < STOPS[2] + .06 ? (STOPS[2] + .06 - t) / .06 : 0;
+      const shake = reduced ? 0 : Math.max(...STOPS.map(stop => t >= stop && t < stop + .026 ? (1 - (t - stop) / .026) * (stop === STOPS[2] ? .6 : .2) : 0));
       c.translate(Math.sin(time * 130) * 7 * shake, Math.cos(time * 110) * 6 * shake);
       c.save(); c.translate(L.x, L.y); c.scale(L.s, L.s); machine(t, time, st); c.restore();
 
-      if (!reduced && winning) {
-        const need = Math.floor(clamp((t - STOPS[2]) / .2) * 80) - coinsMade;
-        if (need > 0 && t < .9) { spawnCoins(L, need); if (now - coinTick > 45) { tone(2600 + rnd(coinsMade) * 1200, .06, .02, 'sine', 0, .8); coinTick = now; } }
-      }
-      drawCoins(dt, Math.max(.6, Math.min(w, h) / 760));
-      if (!reduced && winning && t < STOPS[2] + .07) { c.fillStyle = `rgba(255,226,160,${(1 - (t - STOPS[2]) / .07) * .38})`; c.fillRect(-20, -20, w + 40, h + 40); }
       c.restore();
 
       if ((raw >= 1 || reduced) && !ready) { ready = true; onReady(); }
@@ -412,6 +367,7 @@
     if (!c) { setPhase(3); ready = true; onReady(); } else draw(performance.now());
     return () => {
       stopped = true; if (raf !== null) cancelAnimationFrame(raf); observer.disconnect(); dialog.style.removeProperty('--slot-ticket-top');
+      if (c) { c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, canvas.width, canvas.height); c.restore(); }
       if (audio && audio.state !== 'closed') audio.close().catch(() => {});
     };
   };

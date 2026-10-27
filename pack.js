@@ -22,10 +22,17 @@
     const canvas = document.getElementById('orbit-canvas');
     const timers = new Set(), listeners = new AbortController();
     let active = 0, mode = 'choose', stopped = false, raf = 0, audio = null, drag = null, suppressClick = false;
-    const speed = duration === 1000 ? .42 : 1;
+    const speed = duration === 1000 ? .36 : 1;
+    const motionControls = [];
+    const motion = !reduced && window.Motion?.animate;
+    if (motion) dialog.classList.add('pack-motion');
+    function move(element, frames, seconds, delay = 0) {
+      if (!motion || stopped) return;
+      motionControls.push(window.Motion.animate(element, frames, {duration: seconds * speed, delay: delay * speed, ease: [0.16, 1, 0.3, 1]}));
+    }
     const scene = document.createElement('section');
     scene.className = 'pack-scene';
-    scene.innerHTML = `<div class="pack-prompt"><h2 id="pack-heading">시작을 뜯어볼까?</h2><p>끌어서 고르고, 마음에 드는 팩을 눌러요.</p></div><div class="pack-carousel" role="group" aria-label="팩 선택"><div class="pack-ground" aria-hidden="true"></div><div class="pack-deck">${variants.map((v, i) => `<button type="button" class="pack-item" data-index="${i}" aria-label="${v.name} 팩 선택">${foil(v)}</button>`).join('')}</div><button type="button" class="pack-nav pack-prev" aria-label="이전 팩">${arrow(-1)}</button><button type="button" class="pack-nav pack-next" aria-label="다음 팩">${arrow(1)}</button></div><div class="pack-controls"><div class="pack-position" aria-live="polite"><span class="pack-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="pack-position-name">실버 팩</span></div><button type="button" class="pack-open">이 팩 뜯기 ${arrow(1)}</button><p>어떤 팩이든, 필요한 일 하나가 담겨 있어요.</p></div><div class="pack-flash" aria-hidden="true"></div>`;
+    scene.innerHTML = `<div class="pack-prompt"><h2 id="pack-heading">시작을 뜯어볼까?</h2><p>바로 뜯어도 좋아요. 다른 색은 옆으로 넘겨요.</p></div><div class="pack-carousel" role="group" aria-label="팩 선택"><div class="pack-ground" aria-hidden="true"></div><div class="pack-deck">${variants.map((v, i) => `<button type="button" class="pack-item" data-index="${i}" aria-label="${v.name} 팩 선택">${foil(v)}</button>`).join('')}</div><button type="button" class="pack-nav pack-prev" aria-label="이전 팩">${arrow(-1)}</button><button type="button" class="pack-nav pack-next" aria-label="다음 팩">${arrow(1)}</button></div><div class="pack-controls"><div class="pack-position" aria-live="polite"><span class="pack-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="pack-position-name">실버 팩</span></div><button type="button" class="pack-open">바로 뜯기 ${arrow(1)}</button><p>팩의 색은 취향대로. 할 일은 우리가 골라요.</p></div><div class="pack-flash" aria-hidden="true"></div>`;
     dialog.append(scene);
     dialog.dataset.packState = 'choose';
     dialog.dataset.packMetal = variants[active].color;
@@ -40,7 +47,7 @@
     cardTop.innerHTML = `<span>MAGAM RESCUE</span><span>STARTER CARD</span>`;
     const cardArt = document.createElement('div');
     cardArt.className = 'pack-card-art'; cardArt.setAttribute('aria-hidden', 'true');
-    cardArt.innerHTML = `<div class="pack-card-medal">${mark}</div><span>YOUR NEXT MOVE</span><b>START.</b>`;
+    cardArt.innerHTML = `<div class="pack-card-medal">${mark}</div><span>꺼낸 한 장, 지금 시작.</span><span class="pack-card-edition">SILVER EDITION</span>`;
     result.prepend(cardTop, cardArt);
     const cardBack = document.createElement('div');
     cardBack.className = 'pack-card-back'; cardBack.setAttribute('aria-hidden', 'true');
@@ -77,6 +84,7 @@
       if (mode !== 'choose') return;
       active = (index + variants.length) % variants.length;
       dialog.dataset.packMetal = variants[active].color;
+      cardArt.querySelector('.pack-card-edition').textContent = variants[active].code + ' EDITION';
       items.forEach((item, i) => {
         const diff = (i - active + 3) % 3;
         item.dataset.position = diff === 0 ? 'center' : diff === 1 ? 'right' : 'left';
@@ -95,7 +103,7 @@
       canvas.width = w * dpr; canvas.height = h * dpr; c.setTransform(dpr, 0, 0, dpr, 0, 0);
       const start = performance.now(), ox = w * .5, oy = h * .44;
       const colors = ['#f3f4ed', '#b9c9d9', '#6482ff', '#d8dfb8', '#879bb3'];
-      const sparks = Array.from({ length: 76 }, (_, i) => {
+      const sparks = Array.from({ length: 38 }, (_, i) => {
         const angle = Math.random() * Math.PI * 2, velocity = (180 + Math.random() * 650) * Math.min(1, w / 800);
         return { vx: Math.cos(angle) * velocity, vy: Math.sin(angle) * velocity - 140, size: 2 + Math.random() * 7, angle, spin: (Math.random() - .5) * 13, color: colors[i % colors.length], line: i % 4 === 0 };
       });
@@ -124,6 +132,7 @@
       mode = 'ready'; dialog.dataset.packState = 'ready'; dialog.dataset.phase = '3';
       dialog.setAttribute('aria-labelledby', 'orbit-title');
       scene.setAttribute('aria-hidden', 'true'); scene.inert = true;
+      if (motion) result.style.transform = 'translate(-50%,-50%) rotate(-1deg)';
       onReady();
       const target = document.getElementById('orbit-start');
       (target.hidden ? document.getElementById('orbit-reroll') : target).focus({ preventScroll: true });
@@ -139,12 +148,25 @@
       announcement.textContent = variants[active].name + ' 팩을 뜯고 있어요.';
       if (reduced) { finish(); return; }
       tone(110, .12, .05);
-      later(rip, 360 * speed);
+      if (motion) {
+        const foil = items[active].querySelector('.pack-foil');
+        move(foil, {transform:['rotate(0deg) scale(1)', 'rotate(-2deg) scale(.97)', 'rotate(.5deg) scale(1.02)', 'rotate(0deg) scale(1)']}, .62);
+        move(foil.querySelector('.pack-cut'), {clipPath:['inset(0 100% 0 0)', 'inset(0 0% 0 0)'],opacity:[0,1]}, .36, .18);
+        move(foil.querySelector('.pack-tear'), {transform:['translate(0%,0%) rotate(0deg)', 'translate(6%,-10%) rotate(5deg)', 'translate(55%,-65%) rotate(25deg)', 'translate(150%,-160%) rotate(62deg)'],opacity:[1,1,1,0]}, .8, .22);
+        move(foil.querySelector('.pack-sleeve'), {transform:['translateY(0%) rotate(0deg)', 'translateY(18%) rotate(3deg)', 'translateY(125%) rotate(14deg)'],opacity:[1,1,0]}, .95, .65);
+        move(foil.querySelector('.pack-reflection'), {opacity:[.18,.65,0],backgroundPosition:['100% 50%','0% 50%']}, .8);
+        move(cardBack, {transform:['translate(-50%,0%) scale(.65) rotateY(-8deg)', 'translate(-50%,-58%) scale(.94) rotateY(-8deg)', 'translate(-50%,-55%) scale(1) rotateY(-95deg)'],opacity:[0,1,0]}, 1.2, .45);
+      }
+      later(rip, 260 * speed);
       later(() => {
         dialog.dataset.packState = 'reveal';
+        if (motion) {
+          move(result, {transform:['translate(-50%,-35%) rotateY(85deg) rotate(4deg) scale(.84)','translate(-50%,-54%) rotateY(-8deg) rotate(-2deg) scale(1.015)','translate(-50%,-50%) rotateY(0deg) rotate(-1deg) scale(1)'],opacity:[0,1,1]}, 1.12);
+          move(scene.querySelector('.pack-flash'), {opacity:[0,.5,0]}, .48);
+        }
         burst(); tone(65, .35, .1, 'sine'); tone(660, .35, .025); later(() => tone(990, .4, .02), 90);
       }, 860 * speed);
-      later(finish, 2680 * speed);
+      later(finish, 2240 * speed);
     }
     listen(scene.querySelector('.pack-prev'), 'click', () => select(active - 1));
     listen(scene.querySelector('.pack-next'), 'click', () => select(active + 1));
@@ -197,13 +219,13 @@
     select(0, false);
     openButton.focus({ preventScroll: true });
     const stop = () => {
-      stopped = true; listeners.abort(); timers.forEach(clearTimeout); timers.clear();
+      stopped = true; motionControls.forEach(control => control.cancel()); result.style.removeProperty("transform"); result.style.removeProperty("opacity"); listeners.abort(); timers.forEach(clearTimeout); timers.clear();
       if (raf) cancelAnimationFrame(raf);
       canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
       observer.disconnect(); scene.remove(); cardTop.remove(); cardArt.remove(); cardBack.remove();
       delete dialog.dataset.packState; delete dialog.dataset.packMetal;
       dialog.style.removeProperty('--pack-speed'); dialog.style.removeProperty('--pack-time');
-      dialog.classList.remove('pack-reduced'); dialog.setAttribute('aria-labelledby', 'orbit-title');
+      dialog.classList.remove('pack-reduced', 'pack-motion'); dialog.setAttribute('aria-labelledby', 'orbit-title');
       if (audio && audio.state !== 'closed') audio.close().catch(() => {});
     };
     return stop;

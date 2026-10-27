@@ -1,0 +1,81 @@
+/* The paid themes share one rule: the reveal earns attention, the task keeps it. */
+.orbit-dialog[data-theme=pack].pack-motion .pack-item[data-position=center] .pack-tear,
+.orbit-dialog[data-theme=pack].pack-motion .pack-item[data-position=center] .pack-cut,
+.orbit-dialog[data-theme=pack].pack-motion .pack-item[data-position=center] .pack-sleeve,
+.orbit-dialog[data-theme=pack].pack-motion .pack-item[data-position=center] .pack-reflection,
+.orbit-dialog[data-theme=pack].pack-motion .pack-card-back,
+.orbit-dialog[data-theme=pack].pack-motion .pack-flash,
+.orbit-dialog[data-theme=pack].pack-motion .orbit-result{animation:none}
+.orbit-dialog[data-theme=pack].pack-motion .pack-card-back{z-index:5}
+.orbit-dialog[data-theme=pack].pack-motion[data-pack-state=reveal] .orbit-result{visibility:visible}
+.orbit-dialog[data-theme=pack] .orbit-result{width:min(440px,calc(100% - 40px));padding:23px 27px 26px;box-shadow:2px 3px 3px #70818e,8px 20px 42px #0007;top:51%}
+.orbit-dialog[data-theme=pack] .pack-card-top{margin-bottom:18px;font-size:9px}
+.orbit-dialog[data-theme=pack] .pack-card-art{height:46px;padding:0 11px;display:flex;align-items:center;justify-content:space-between;border-radius:3px;background:#1e354f;overflow:hidden}
+.orbit-dialog[data-theme=pack] .pack-card-art>span{font:600 11px var(--sans);letter-spacing:0;position:relative;z-index:2;color:#edf4f8}
+.orbit-dialog[data-theme=pack] .pack-card-art>.pack-card-edition{font-size:8px;letter-spacing:.08em;color:#d0dce9}
+.orbit-dialog[data-theme=pack] .pack-card-medal{width:72px;height:72px;right:29%;top:-15px;opacity:.16;transform:rotate(-14deg)}
+.orbit-dialog[data-theme=pack] .pack-card-medal svg{filter:none}
+.orbit-dialog[data-theme=pack] .orbit-result-kicker{display:none}
+.orbit-dialog[data-theme=pack] .orbit-result h2{font-size:clamp(28px,3.6vw,40px);line-height:1.3;margin:26px 0 0;letter-spacing:-.03em;text-wrap:balance}
+.orbit-dialog[data-theme=pack] .orbit-result-copy{font-size:13px;line-height:1.7;margin-top:16px;color:#3c5364}
+.orbit-dialog[data-theme=pack] .orbit-result-actions{margin-top:28px;gap:9px}
+.orbit-dialog[data-theme=pack] .orbit-start{min-height:51px;font-size:15px}
+.orbit-dialog[data-theme=pack] .orbit-reroll{min-height:46px}
+.orbit-dialog[data-theme=pack] .orbit-result-note{font-size:11px;line-height:1.6;margin-top:15px}
+/* The shell stays around the paper. There is no second, unrelated result panel. */
+.orbit-dialog[data-theme=capsule].capsule-spotlight{background:#e4ded1}
+.orbit-dialog[data-theme=capsule].capsule-spotlight::before{background:radial-gradient(ellipse at 50% 45%,#fffaf0,#ded5c4 80%);z-index:-3}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .capsule-scene,
+.orbit-dialog[data-theme=capsule].capsule-spotlight.capsule-opening .capsule-scene{inset:75px 0 64px;top:75px;bottom:64px;left:0;width:100%;height:auto;transform-origin:50% 55%;transition:none}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .capsule-prize{width:340px;height:295px;z-index:2}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .capsule-prize>svg{filter:drop-shadow(4px 12px 9px #59412c40)}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result{width:min(400px,calc(100% - 44px));max-width:400px;max-height:calc(100dvh - 175px);padding:29px 27px 30px;clip-path:none;border-radius:3px;box-shadow:1px 3px 5px #5d47252b,10px 19px 35px #654d2c26;background:#fff9e9;scrollbar-color:#9a7658 #fff9e9}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result:before{content:'고민 보관소';font:600 12px var(--sans);letter-spacing:0;padding-bottom:16px;margin-bottom:22px;color:#79533b;border-bottom:1px dashed #b7a68c}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result-kicker{display:none}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result h2{font-size:clamp(28px,3.7vw,38px);line-height:1.35;letter-spacing:-.03em;color:#493327}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result-copy{font-size:13px;line-height:1.7;color:#72553f;margin-top:16px}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result-actions{display:flex;flex-direction:column;gap:9px;margin-top:26px}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result-actions button{width:100%;min-height:47px;font-size:14px;box-shadow:none}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result-note{color:#775b43;font-size:11px;line-height:1.6;margin-top:16px}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-intro{bottom:65px}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-footer{color:#6f543e}
+.orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-footer>span:last-child{color:#6f543e}
+.orbit-dialog[data-theme=capsule].capsule-spotlight button:focus-visible{outline:3px solid #914334;outline-offset:4px}
+/* Quieter slot ticket and a still, themed focus room. */
+.orbit-dialog[data-theme=slot]{background:#171315}
+.orbit-dialog[data-theme=slot] .orbit-result{width:min(470px,calc(100% - 40px));padding:23px 25px;filter:drop-shadow(3px 12px 18px #0007)}
+.orbit-dialog[data-theme=slot] .orbit-result-kicker{font-size:12px;margin-bottom:15px;padding-bottom:12px;color:#7b2836}
+.orbit-dialog[data-theme=slot] .orbit-result h2{font-size:clamp(27px,3.6vw,38px);letter-spacing:-.03em;line-height:1.3}
+.orbit-dialog[data-theme=slot] .orbit-result-copy{font-size:13px;line-height:1.6;color:#634a3c;margin-top:13px}
+.orbit-dialog[data-theme=slot] .orbit-result-note{font-size:11px;line-height:1.5;color:#6b5342}
+.orbit-dialog[data-theme=slot] .orbit-result-note:after{display:none}
+.orbit-dialog[data-theme=slot] .orbit-result-actions{margin-top:22px;gap:9px}
+.orbit-dialog[data-theme=slot] .orbit-result-actions button{box-shadow:none;font-size:14px;min-height:46px}
+.focus-dialog[data-theme=slot] .focus-universe{background:radial-gradient(ellipse at 50% 45%,#39252a,#171315 75%)}
+.focus-dialog[data-theme=slot] .focus-universe:before,.focus-dialog[data-theme=slot] .focus-universe:after{display:none}
+@media(max-width:560px){
+ .orbit-dialog[data-theme=pack] .orbit-result{padding:20px 23px 23px}
+ .orbit-dialog[data-theme=pack] .orbit-result h2{font-size:30px;margin-top:22px}
+ .orbit-dialog[data-theme=pack] .pack-card-art{height:42px}
+ .orbit-dialog[data-theme=pack] .pack-card-top{margin-bottom:15px}
+ .orbit-dialog[data-theme=capsule].capsule-spotlight .capsule-prize{width:300px;height:260px}
+ .orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result{padding:24px 23px 25px}
+ .orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result h2{font-size:29px}
+}
+@media(max-height:620px){
+ .orbit-dialog[data-theme=pack] .orbit-result{padding:16px 22px;max-height:calc(100dvh - 120px)}
+ .orbit-dialog[data-theme=pack] .pack-card-top{margin-bottom:11px}
+ .orbit-dialog[data-theme=pack] .pack-card-art{height:33px}
+ .orbit-dialog[data-theme=pack] .orbit-result h2{margin-top:18px;font-size:28px}
+ .orbit-dialog[data-theme=pack] .orbit-result-copy{margin-top:10px}
+ .orbit-dialog[data-theme=pack] .orbit-result-actions{margin-top:18px}
+ .orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result{max-height:calc(100dvh - 120px);padding:18px 23px}
+ .orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result:before{margin-bottom:15px;padding-bottom:11px}
+ .orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result h2{font-size:27px}
+ .orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result-actions{margin-top:18px}
+ .orbit-dialog[data-theme=capsule].capsule-spotlight .orbit-result-copy{margin-top:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ .orbit-dialog[data-theme=capsule].capsule-spotlight .capsule-scene{will-change:auto}
+ .orbit-dialog[data-theme=pack].pack-reduced .orbit-result{transform:translate(-50%,-50%)}
+}

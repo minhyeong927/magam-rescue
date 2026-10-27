@@ -25,15 +25,15 @@
   const selected=makeCap(color);dispensed.append(selected.g);
   const hero=makeCap(color);prize.querySelector('.prize-shells').append(hero.g);
   // The actual result sheet is the paper from the capsule, not a second result card.
-  dialog.classList.add('capsule-kinetic');
+  dialog.classList.add('capsule-kinetic','capsule-spotlight');
   if(wasOpened&&!reduced){oldTicket=document.createElement('div');oldTicket.className='capsule-old-ticket';oldTicket.setAttribute('aria-hidden','true');const label=document.createElement('span');label.textContent='고민 보관소';const oldTitle=document.createElement('strong');oldTitle.textContent=previousWinner;oldTicket.append(label,oldTitle);dialog.append(oldTicket);}
   if(sound&&!reduced){try{audio=new(window.AudioContext||window.webkitAudioContext)();audio.resume().catch(()=>{});}catch(_){}}
   function tick(f=180,length=.05,volume=.035){if(!audio)return;try{const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime;o.type='triangle';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(55,t+length);g.gain.setValueAtTime(volume,t);g.gain.exponentialRampToValueAtTime(.0001,t+length);o.connect(g);g.connect(audio.destination);o.start();o.stop(t+length+.01);}catch(_){}}
   function frame(now){
    if(stopped)return;
-   const t=reduced?1:Math.min(1,(now-started)/duration),spin=ease((t-.07)/.40),opening=ease((t-.68)/.13),unfold=ease((t-.79)/.19);
+   const t=reduced?1:Math.min(1,(now-started)/duration),spin=ease((t-.07)/.40),opening=ease((t-.67)/.17),unfold=ease((t-.81)/.17);
    const n=t<.13?0:t<.48?1:t<.80?2:3;
-   if(n!==phase){phase=n;dialog.dataset.phase=String(n);document.getElementById('orbit-phase').textContent=['손잡이를 돌려, 고민을 내려놓아요','딸깍, 캡슐을 고르는 중','알을 열면, 오늘 할 일이 나와요','오늘은 이거 하나.'][n];}
+   if(n!==phase){phase=n;dialog.dataset.phase=String(n);document.getElementById('orbit-phase').textContent=['손잡이를 돌려, 고민을 내려놓아요','딸깍, 캡슐을 고르는 중','딸깍. 안에 든 한 장을 펼쳐요','오늘은 이거 하나.'][n];}
    dialog.classList.toggle('capsule-opening',t>=.58);
    document.getElementById('orbit-coordinates').textContent='고민 보관소 / '+String(Math.min(100,Math.floor(t*100))).padStart(3,'0');
    const step=Math.floor(spin*10);if(step>soundStep&&t<.5){soundStep=step;tick(125+step*11);}
@@ -54,30 +54,34 @@
     b.g.style.opacity=String(.72+b.scale*.22);
    });
    selected.g.style.opacity=t>=.48&&t<.57?'1':'0';const drop=clamp((t-.48)/.09);selected.g.setAttribute('transform',`translate(347 ${530+drop*60}) rotate(${drop*110}) scale(1.05)`);
-   const width=dialog.clientWidth,height=dialog.clientHeight,wide=width>=800;
+   const width=dialog.clientWidth,height=dialog.clientHeight;
+   const retreat=ease((t-.55)/.17);
+   scene.style.opacity=String(1-retreat);
+   scene.style.transform=`scale(${1-retreat*.14})`;
+   dialog.style.setProperty('--capsule-spotlight',String(retreat));
    // Start exactly at the SVG chute's screen position, then roll towards the viewer.
    const matrix=svg.getScreenCTM();let sourceX=width*.56,sourceY=height*.69,sourceSize=.45;
    if(matrix){const p=svg.createSVGPoint();p.x=347;p.y=590;const pos=p.matrixTransform(matrix);sourceX=pos.x;sourceY=pos.y;sourceSize=Math.min(.75,Math.abs(matrix.a)*.55);}
    if(!sourcePosition&&t>=.54)sourcePosition={x:sourceX,y:sourceY,size:sourceSize};
    if(sourcePosition){sourceX=sourcePosition.x;sourceY=sourcePosition.y;sourceSize=sourcePosition.size;}
-   const roll=ease((t-.54)/.14),heroX=mix(sourceX,width*.5,roll),heroY=mix(sourceY,height*.60,roll)-Math.abs(Math.sin(roll*Math.PI*2))*18*(1-roll);
-   const finalX=wide?width*.73:width*.5;
+   const roll=ease((t-.54)/.14),heroX=mix(sourceX,width*.5,roll),heroY=mix(sourceY,height*.51,roll)-Math.abs(Math.sin(roll*Math.PI*2))*18*(1-roll);
+   const finalX=width*.5;
    // Measure the full-sized paper so long task names still remain in the viewport.
-   const sheetH=result.offsetHeight,finalY=wide?height*.5:height-76-sheetH*.5;
-   const shellY=mix(heroY,Math.min(height-150,finalY+sheetH*.38),unfold);
+   const sheetH=result.offsetHeight,finalY=height*.53;
+   const shellY=mix(heroY,Math.min(height-120,finalY+sheetH*.40),unfold);
    const shellX=mix(heroX,finalX,unfold);
    prize.style.left=shellX+'px';prize.style.top=shellY+'px';prize.style.opacity=t>=.54?'1':'0';
-   const heroScale=mix(sourceSize,1,roll);prize.style.transform=`translate(-50%,-50%) scale(${heroScale})`;
+   const heroScale=mix(sourceSize,width>=800?1.65:1.4,roll)*(1-.45*unfold);prize.style.transform=`translate(-50%,-50%) scale(${heroScale})`;
    hero.g.setAttribute('transform',`rotate(${opening?0:roll*365+Math.sin(roll*10)*5})`);
-   hero.t.setAttribute('transform',`translate(${-opening*43-unfold*12} ${opening*20+unfold*12}) rotate(${-opening*55})`);
-   hero.b.setAttribute('transform',`translate(${opening*42+unfold*12} ${opening*17}) rotate(${opening*28})`);
+   hero.t.setAttribute('transform',`translate(${-opening*46-unfold*13} ${-opening*18+unfold*28}) rotate(${-opening*55})`);
+   hero.b.setAttribute('transform',`translate(${opening*45+unfold*13} ${opening*22+unfold*8}) rotate(${opening*28})`);
    if(wasOpened&&t<.13){const out=ease(t/.13);prize.style.left=(width*.5+out*width)+'px';prize.style.top=(height*.82)+'px';prize.style.opacity=String(1-out);prize.style.transform=`translate(-50%,-50%) rotate(${out*45}deg)`;hero.t.setAttribute('transform','translate(-55 32) rotate(-55)');hero.b.setAttribute('transform','translate(54 17) rotate(28)');}
    prize.querySelector('.capsule-contact-shadow').style.transform=`scale(${mix(.4,1,roll)})`;
-   const paperRise=ease((t-.73)/.09),paperX=mix(heroX,finalX,unfold),paperY=mix(heroY-18-paperRise*42,finalY,unfold);
-   const scale=mix(.075,1,unfold),fold=t<.87?mix(82,0,ease((t-.79)/.08)):0;
+   const paperRise=ease((t-.77)/.08),paperX=mix(heroX,finalX,unfold),paperY=mix(heroY-18-paperRise*42,finalY,unfold);
+   const scale=mix(.12,1,unfold),fold=mix(78,0,ease((t-.81)/.15));
    result.style.setProperty('--paper-x',paperX+'px');result.style.setProperty('--paper-y',paperY+'px');result.style.setProperty('--paper-scale',scale);result.style.setProperty('--paper-fold',fold+'deg');result.style.setProperty('--paper-light',String(unfold));
-   result.style.opacity=t>=.73?'1':'0';result.style.visibility=t>=.73?'visible':'hidden';
-   result.classList.toggle('capsule-paper-open',t>=.94);result.classList.toggle('capsule-paper-lift',t>=.73);
+   result.style.opacity=t>=.77?'1':'0';result.style.visibility=t>=.77?'visible':'hidden';
+   result.classList.toggle('capsule-paper-open',t>=.94);result.classList.toggle('capsule-paper-lift',t>=.77);
    if(oldTicket){oldTicket.style.transform=`translate(-50%,0) translateX(${ease(t/.13)*width}px) rotate(${t*90}deg)`;oldTicket.style.opacity=String(1-clamp(t/.13));}
    svg.querySelector('#machine-body').setAttribute('transform',`translate(${t>.46&&t<.54?Math.sin(t*210)*1.7:0} 0)`);
    if((t>=1||reduced)&&!ready){ready=true;previousOpened=true;previousWinner=winner;onReady();}
@@ -85,6 +89,6 @@
   }
   frame(performance.now());
   const observer=new ResizeObserver(()=>{if(ready&&!stopped)frame(started+duration);});observer.observe(dialog);
-  return()=>{stopped=true;cancelAnimationFrame(raf);observer.disconnect();scene.remove();prize.remove();if(oldTicket)oldTicket.remove();dialog.classList.remove('capsule-kinetic','capsule-opening');result.classList.remove('capsule-paper-open','capsule-paper-lift');['--paper-x','--paper-y','--paper-scale','--paper-fold','--paper-light','opacity','visibility'].forEach(name=>result.style.removeProperty(name));if(audio&&audio.state!=='closed')audio.close().catch(()=>{});};
+  return()=>{stopped=true;cancelAnimationFrame(raf);observer.disconnect();scene.remove();prize.remove();if(oldTicket)oldTicket.remove();dialog.classList.remove('capsule-kinetic','capsule-opening','capsule-spotlight');dialog.style.removeProperty('--capsule-spotlight');result.classList.remove('capsule-paper-open','capsule-paper-lift');['--paper-x','--paper-y','--paper-scale','--paper-fold','--paper-light','opacity','visibility'].forEach(name=>result.style.removeProperty(name));if(audio&&audio.state!=='closed')audio.close().catch(()=>{});};
  };
 })();
